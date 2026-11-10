@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a73e8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<title>Hausmeister Imiolek</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7/dist/fuse.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --blue:#1a73e8;--blue-bg:#e8f0fe;--blue-dark:#1557b0;
+  --green:#0d9488;--green-bg:#e6f5f3;
+  --red:#dc2626;--red-bg:#fef2f2;
+  --gray:#6b7280;--gray-light:#f3f4f6;--gray-border:#e5e7eb;
+  --bg:#f9fafb;--white:#ffffff;--text:#111827;--text-sec:#6b7280;
+  --radius:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
+.screen{display:none;flex:1;flex-direction:column}
+.screen.active{display:flex}
+header{padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--gray-border);background:var(--white)}
+header h1{font-size:18px;font-weight:600}
+header .back{width:36px;height:36px;border:none;background:var(--gray-light);border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.content{flex:1;padding:20px;overflow-y:auto}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;text-align:center;transition:transform .1s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-outline{background:var(--white);color:var(--text);border:1px solid var(--gray-border)}
+.btn-danger{background:var(--red);color:#fff}
+.card{background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-border);padding:16px;margin-bottom:12px}
+.card-action{cursor:pointer;transition:box-shadow .15s}
+.card-action:active{box-shadow:0 0 0 2px var(--blue)}
+.input-group{margin-bottom:16px}
+.input-group label{display:block;font-size:13px;color:var(--text-sec);margin-bottom:6px}
+.input-group input,.input-group select,.input-group textarea{width:100%;padding:10px 12px;border:1px solid var(--gray-border);border-radius:8px;font-size:15px;background:var(--white)}
+.input-group textarea{resize:vertical;min-height:60px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:500}
+.chip-blue{background:var(--blue-bg);color:var(--blue)}
+.chip-green{background:var(--green-bg);color:var(--green)}
+.toggle-group{display:flex;gap:8px;margin-bottom:16px}
+.toggle-group button{flex:1;padding:10px;border:1px solid var(--gray-border);border-radius:8px;background:var(--white);font-size:13px;font-weight:500;cursor:pointer}
+.toggle-group button.active{background:var(--blue-bg);color:var(--blue);border-color:var(--blue)}
+.task-check{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray-border)}
+.task-check:last-child{border-bottom:none}
+.task-check input[type=checkbox]{width:20px;height:20px;accent-color:var(--blue)}
+.task-check span{font-size:14px;flex:1}
+.mic-btn{width:80px;height:80px;border-radius:50%;border:none;background:var(--blue);color:#fff;font-size:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:24px auto;transition:all .2s;position:relative}
+.mic-btn.recording{background:var(--red);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}50%{box-shadow:0 0 0 16px rgba(220,38,38,0)}}
+.mic-btn svg{width:36px;height:36px;fill:currentColor}
+.speech-result{background:var(--gray-light);border-radius:8px;padding:12px;margin-top:16px;font-size:14px;color:var(--text-sec);font-style:italic;min-height:44px}
+.confirm-item{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--green-bg);border-radius:8px;margin-bottom:6px}
+.confirm-item .remove{margin-left:auto;background:none;border:none;font-size:18px;color:var(--red);cursor:pointer;padding:0 4px}
+.confirm-item svg{width:18px;height:18px;fill:var(--green)}
+.duration-box{display:flex;align-items:center;gap:8px;padding:12px;background:var(--gray-light);border-radius:8px;margin:12px 0}
+.duration-box input{width:80px;padding:6px 8px;border:1px solid var(--gray-border);border-radius:6px;font-size:15px;font-weight:600;text-align:center}
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--white);border-radius:8px;border:1px solid var(--gray-border);margin-bottom:8px}
+.list-item .name{font-weight:500;font-size:14px}
+.list-item .meta{font-size:12px;color:var(--text-sec)}
+.month-nav{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 0}
+.month-nav button{background:none;border:none;font-size:20px;cursor:pointer;padding:4px 8px;color:var(--text-sec)}
+.month-nav span{font-size:15px;font-weight:600;min-width:140px;text-align:center}
+.print-table{width:100%;border-collapse:collapse;font-size:11px}
+.print-table th,.print-table td{border:1px solid var(--gray-border);padding:4px 3px;text-align:center}
+.print-table th{background:var(--gray-light);font-weight:500;font-size:10px}
+.print-table td.task-name{text-align:left;white-space:nowrap;font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis}
+.print-table .check{color:var(--green);font-weight:700}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:var(--blue);color:#fff;border:none;font-size:28px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center}
+.empty{text-align:center;padding:40px 20px;color:var(--text-sec);font-size:14px}
+.summary{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--blue-bg);border-radius:8px;font-size:13px;color:var(--blue);margin-top:12px}
+.summary strong{font-weight:600}
+.flex-row{display:flex;gap:8px}
+.flex-row>*{flex:1}
+.hidden{display:none!important}
+.add-task-row{display:flex;gap:8px;margin-top:8px}
+.add-task-row input{flex:1;padding:8px;border:1px solid var(--gray-border);border-radius:6px;font-size:13px}
+.add-task-row button{padding:8px 12px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer}
+.customer-type-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+@media print{
+  body{max-width:none}
+  .no-print{display:none!important}
+  .print-only{display:block!important}
+  .print-table{font-size:9px}
+  .print-table th,.print-table td{padding:2px}
+  header,.fab{display:none}
+  .content{padding:0}
+  .print-header{text-align:center;margin-bottom:12px}
+  .print-header h2{font-size:14px}
+  .print-header p{font-size:11px;color:#666}
+}
+.print-only{display:none}
+</style>
+</head>
+<body>
+
+<!-- ========== SCREEN: HOME ========== -->
+<div id="s-home" class="screen active">
+  <header>
+    <div style="flex:1">
+      <h1>Hausmeister Imiolek</h1>
+      <p style="font-size:13px;color:var(--text-sec)">Auftragserfassung</p>
+    </div>
+    <button class="back" onclick="showScreen('s-settings')" title="Einstellungen">⚙</button>
+  </header>
+  <div class="content">
+    <div class="card card-action" onclick="startEntry('dauerkunde')" style="background:var(--blue-bg);border-color:transparent;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:24px">🏢</div>
+        <div style="flex:1">
+          <div style="font-weight:600;color:var(--blue)">Dauerkunde</div>
+          <div style="font-size:12px;color:var(--blue);opacity:.7">Monatstabelle mit Tätigkeiten</div>
+        </div>
+        <div style="color:var(--blue)">›</div>
+      </div>
+    </div>
+    <div class="card card-action" onclick="startEntry('privatkunde')" style="background:var(--green-bg);border-color:transparent;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:24px">👤</div>
+        <div style="flex:1">
+          <div style="font-weight:600;color:var(--green)">Privatkunde</div>
+          <div style="font-size:12px;color:var(--green);opacity:.7">Einzelauftrag erfassen</div>
+        </div>
+        <div style="color:var(--green)">›</div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:13px;color:var(--text-sec);font-weight:500">Letzte Einträge</span>
+      <button style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer" onclick="showScreen('s-history')">Alle anzeigen</button>
+    </div>
+    <div id="recent-entries"></div>
+  </div>
+  <button class="fab no-print" onclick="showScreen('s-customers')">☰</button>
+</div>
+
+<!-- ========== SCREEN: KUNDEN AUSWÄHLEN (Dauerkunde) ========== -->
+<div id="s-select-customer" class="screen">
+  <header>
+    <button class="back" onclick="showScreen('s-home')">←</button>
+    <h1 id="select-customer-title">Kunde wählen</h1>
+  </header>
+  <div class="content">
+    <input type="text" id="customer-search" placeholder="Kunde suchen..." style="width:100%;padding:10px 12px;border:1px solid var(--gray-border);border-radius:8px;font-size:15px;margin-bottom:16px" oninput="filterCustomers()">
+    <div id="customer-list"></div>
+    <button class="btn btn-outline" style="margin-top:12px" onclick="showScreen('s-new-customer')">+ Neuen Kunden anlegen</button>
+  </div>
+</div>
+
+<!-- ========== SCREEN: SPRACHEINGABE ========== -->
+<div id="s-speech" class="screen">
+  <header>
+    <button class="back" onclick="showScreen(currentEntryType==='dauerkunde'?'s-select-customer':'s-home')">←</button>
+    <h1 id="speech-title">Eintrag</h1>
+  </header>
+  <div class="content" style="text-align:center">
+    <p id="speech-subtitle" style="font-size:14px;color:var(--text-sec);margin-bottom:4px"></p>
+    <p id="speech-date" style="font-size:15px;font-weight:600;margin-bottom:20px"></p>
+
+    <button class="mic-btn" id="mic-btn" onclick="toggleSpeech()">
+      <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+    </button>
+    <p style="font-size:13px;color:var(--text-sec)">Antippen und sprechen</p>
+
+    <div class="speech-result" id="speech-result">Noch nichts erkannt...</div>
+
+    <button class="btn btn-primary" style="margin-top:20px" onclick="processSpeech()" id="process-btn" disabled>Erkennen und zuordnen</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="manualEntry()">Manuell eintragen</button>
+  </div>
+</div>
+
+<!-- ========== SCREEN: BESTÄTIGUNG ========== -->
+<div id="s-confirm" class="screen">
+  <header>
+    <button class="back" onclick="showScreen('s-speech')">←</button>
+    <h1>Bestätigung</h1>
+  </header>
+  <div class="content">
+    <div id="confirm-customer" style="margin-bottom:16px"></div>
+
+    <div id="confirm-tasks-section">
+      <div style="font-size:13px;color:var(--text-sec);margin-bottom:8px">Erkannte Tätigkeiten</div>
+      <div id="confirm-tasks"></div>
+      <div id="confirm-add-task" style="margin-top:8px"></div>
+    </div>
+
+    <div id="confirm-notes-section" class="hidden">
+      <div class="input-group">
+        <label>Tätigkeit</label>
+        <textarea id="confirm-notes" rows="2"></textarea>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label>Datum</label>
+      <input type="date" id="confirm-date">
+    </div>
+
+    <div class="duration-box">
+      <span style="font-size:14px">⏱ Gesamtzeit:</span>
+      <input type="number" id="confirm-duration" min="0" step="5" value="0">
+      <span style="font-size:14px">Minuten</span>
+    </div>
+
+    <div class="flex-row" style="margin-top:20px">
+      <button class="btn btn-outline" onclick="showScreen('s-speech')">Zurück</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCREEN: MONATSTABELLE ========== -->
+<div id="s-month-table" class="screen">
+  <header class="no-print">
+    <button class="back" onclick="showScreen('s-home')">←</button>
+    <h1 id="month-table-title">Monatstabelle</h1>
+  </header>
+  <div class="content">
+    <div class="print-only print-header">
+      <h2 id="print-title"></h2>
+      <p id="print-subtitle"></p>
+    </div>
+    <div class="month-nav no-print">
+      <button onclick="changeMonth(-1)">‹</button>
+      <span id="month-label"></span>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="table-wrap" id="month-table-wrap"></div>
+    <div class="summary no-print" id="month-summary"></div>
+    <button class="btn btn-outline no-print" style="margin-top:12px" onclick="window.print()">🖨 Drucken</button>
+  </div>
+</div>
+
+<!-- ========== SCREEN: KUNDEN VERWALTEN ========== -->
+<div id="s-customers" class="screen">
+  <header>
+    <button class="back" onclick="showScreen('s-home')">←</button>
+    <h1>Kunden</h1>
+  </header>
+  <div class="content">
+    <div class="toggle-group">
+      <button class="active" onclick="filterCustomerList('all',this)">Alle</button>
+      <button onclick="filterCustomerList('dauerkunde',this)">Dauerkunden</button>
+      <button onclick="filterCustomerList('privatkunde',this)">Privatkunden</button>
+    </div>
+    <div id="all-customers-list"></div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="showScreen('s-new-customer')">+ Neuen Kunden anlegen</button>
+  </div>
+</div>
+
+<!-- ========== SCREEN: NEUER KUNDE ========== -->
+<div id="s-new-customer" class="screen">
+  <header>
+    <button class="back" onclick="showScreen('s-customers')">←</button>
+    <h1>Neuer Kunde</h1>
+  </header>
+  <div class="content">
+    <div class="toggle-group" id="new-cust-type">
+      <button class="active" onclick="setNewCustType('dauerkunde',this)">Dauerkunde</button>
+      <button onclick="setNewCustType('privatkunde',this)">Privatkunde</button>
+    </div>
+    <div class="input-group">
+      <label>Kundenname</label>
+      <input type="text" id="new-cust-name" placeholder="z.B. Hofbauer GmbH">
+    </div>
+    <div class="input-group">
+      <label>Adresse / Ort</label>
+      <input type="text" id="new-cust-address" placeholder="z.B. Ampfing, Hauptstr. 5">
+    </div>
+    <div id="new-cust-tasks-section">
+      <div style="font-size:13px;color:var(--text-sec);margin-bottom:8px">Tätigkeiten auswählen</div>
+      <div id="new-cust-tasks" style="background:var(--gray-light);border-radius:8px;padding:8px 12px;max-height:250px;overflow-y:auto"></div>
+      <div class="add-task-row">
+        <input type="text" id="new-custom-task" placeholder="Eigene Tätigkeit...">
+        <button onclick="addCustomTask()">+</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:20px" onclick="saveNewCustomer()">Kunde anlegen</button>
+  </div>
+</div>
+
+<!-- ========== SCREEN: HISTORY ========== -->
+<div id="s-history" class="screen">
+  <header>
+    <button class="back" onclick="showScreen('s-home')">←</button>
+    <h1>Privatkunden</h1>
+  </header>
+  <div class="content">
+    <div class="month-nav">
+      <button onclick="changePrivMonth(-1)">‹</button>
+      <span id="priv-month-label"></span>
+      <button onclick="changePrivMonth(1)">›</button>
+    </div>
+    <div id="priv-entries-list"></div>
+    <div class="summary" id="priv-summary"></div>
+  </div>
+</div>
+
+<!-- ========== SCREEN: SETTINGS ========== -->
+<div id="s-settings" class="screen">
+  <header>
+    <button class="back" onclick="showScreen('s-home')">←</button>
+    <h1>Einstellungen</h1>
+  </header>
+  <div class="content">
+    <div class="input-group">
+      <label>Supabase URL</label>
+      <input type="text" id="set-url" placeholder="https://xxxxx.supabase.co">
+    </div>
+    <div class="input-group">
+      <label>Supabase Anon Key</label>
+      <input type="text" id="set-key" placeholder="eyJhbGci...">
+    </div>
+    <button class="btn btn-primary" onclick="saveSettings()">Speichern und verbinden</button>
+    <p id="settings-status" style="margin-top:12px;font-size:13px;color:var(--text-sec);text-align:center"></p>
+  </div>
+</div>
+
+<script>
+// ============================================
+// CONFIG & STATE
+// ============================================
+let supabase = null;
+let currentEntryType = '';
+let selectedCustomer = null;
+let customerTasks = [];
+let confirmedTasks = [];
+let speechText = '';
+let currentMonth = new Date();
+let privMonth = new Date();
+let allCustomers = [];
+let customerFilter = 'all';
+let newCustType = 'dauerkunde';
+
+const DEFAULT_TASKS = [
+  'Treppen/Flure kehren, wischen','Briefkästen reinigen','Haustüre reinigen',
+  'Hausabstreifer säubern','Fußabstreifer säubern','Handläufe reinigen',
+  'Kellerräume kehren, waschen','Trockenraum kehren','Aufzug putzen',
+  'Fenster putzen','Beleuchtung kontrollieren','Hauszugang säubern',
+  'Wege/Parkplatz säubern','Heizung prüfen','Mülltonnen vorruck./platz reinigen',
+  'Außenanlagen (Unkraut, Hecke…)','Außen Gully reinigen','Rasen mähen',
+  'Schnee räumen','Zufahrten streuen','Wasserfilter wechseln/spülen',
+  'Kellerlichtschächte reinigen','Türen/Fenster ölen 1x/Jahr',
+  'alle Absperrhähne bewegen (1x/Jahr)','Reparaturen/Sonstige Arbeiten',
+  'Schilderwechsel','Info wg. Wasserprüfung','Vordach reinigen',
+  'Hebepumpe und Schacht reinigen'
+];
+
+const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+// ============================================
+// INIT
+// ============================================
+function init() {
+  const url = localStorage.getItem('sb_url');
+  const key = localStorage.getItem('sb_key');
+  if (url && key) {
+    connectSupabase(url, key);
+    document.getElementById('set-url').value = url;
+    document.getElementById('set-key').value = key;
+  } else {
+    showScreen('s-settings');
+    return;
+  }
+  loadRecentEntries();
+}
+
+function connectSupabase(url, key) {
+  supabase = window.supabase.createClient(url, key);
+}
+
+function saveSettings() {
+  const url = document.getElementById('set-url').value.trim();
+  const key = document.getElementById('set-key').value.trim();
+  if (!url || !key) { alert('Bitte beide Felder ausfüllen'); return; }
+  localStorage.setItem('sb_url', url);
+  localStorage.setItem('sb_key', key);
+  connectSupabase(url, key);
+  document.getElementById('settings-status').textContent = 'Verbunden!';
+  setTimeout(() => { showScreen('s-home'); loadRecentEntries(); }, 500);
+}
+
+// ============================================
+// NAVIGATION
+// ============================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+
+  if (id === 's-customers') loadAllCustomers();
+  if (id === 's-history') loadPrivateEntries();
+  if (id === 's-new-customer') initNewCustomerForm();
+}
+
+// ============================================
+// RECENT ENTRIES
+// ============================================
+async function loadRecentEntries() {
+  if (!supabase) return;
+  const { data } = await supabase
+    .from('visits')
+    .select('*, customers(name, type)')
+    .order('date', { ascending: false })
+    .limit(5);
+
+  const el = document.getElementById('recent-entries');
+  if (!data || data.length === 0) {
+    el.innerHTML = '<div class="empty">Noch keine Einträge</div>';
+    return;
+  }
+  el.innerHTML = data.map(v => {
+    const badge = v.customers.type === 'dauerkunde'
+      ? '<span class="customer-type-badge" style="background:var(--blue-bg);color:var(--blue)">DK</span>'
+      : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">PK</span>';
+    return `<div class="list-item card-action" onclick="${v.customers.type === 'dauerkunde' ? `openMonthTable('${v.customer_id}')` : ''}">
+      <div><div class="name">${badge} ${v.customers.name}</div>
+      <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.</div></div>
+      <div class="meta">${formatDate(v.date)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================
+// START ENTRY
+// ============================================
+function startEntry(type) {
+  currentEntryType = type;
+  if (type === 'dauerkunde') {
+    document.getElementById('select-customer-title').textContent = 'Dauerkunde wählen';
+    loadCustomerList('dauerkunde');
+    showScreen('s-select-customer');
+  } else {
+    selectedCustomer = null;
+    openSpeechScreen();
+  }
+}
+
+async function loadCustomerList(type) {
+  if (!supabase) return;
+  const { data } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('type', type)
+    .order('name');
+
+  const el = document.getElementById('customer-list');
+  if (!data || data.length === 0) {
+    el.innerHTML = '<div class="empty">Noch keine Kunden angelegt</div>';
+    return;
+  }
+  allCustomers = data;
+  renderCustomerList(data);
+}
+
+function renderCustomerList(data) {
+  const el = document.getElementById('customer-list');
+  el.innerHTML = data.map(c => `
+    <div class="card card-action" onclick="selectCustomer('${c.id}','${c.name.replace(/'/g,"\\'")}')">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:500">${c.name}</div>
+          <div style="font-size:12px;color:var(--text-sec)">${c.address || ''}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="back" onclick="event.stopPropagation();openMonthTable('${c.id}')" title="Monatstabelle" style="width:32px;height:32px;font-size:14px">📋</button>
+          <span style="color:var(--text-sec)">›</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterCustomers() {
+  const q = document.getElementById('customer-search').value.toLowerCase();
+  const filtered = allCustomers.filter(c => c.name.toLowerCase().includes(q));
+  renderCustomerList(filtered);
+}
+
+async function selectCustomer(id, name) {
+  selectedCustomer = { id, name };
+  const { data } = await supabase
+    .from('customer_tasks')
+    .select('*')
+    .eq('customer_id', id)
+    .order('sort_order');
+  customerTasks = data || [];
+  openSpeechScreen();
+}
+
+// ============================================
+// SPEECH INPUT
+// ============================================
+function openSpeechScreen() {
+  const title = currentEntryType === 'dauerkunde' && selectedCustomer
+    ? selectedCustomer.name : 'Privatkunde';
+  document.getElementById('speech-title').textContent = title;
+  document.getElementById('speech-subtitle').textContent =
+    currentEntryType === 'dauerkunde' ? 'Tätigkeiten einsprechen' : 'Name, Tätigkeit, Dauer einsprechen';
+  document.getElementById('speech-date').textContent = formatDateLong(new Date());
+  document.getElementById('speech-result').textContent = 'Noch nichts erkannt...';
+  document.getElementById('process-btn').disabled = true;
+  speechText = '';
+  showScreen('s-speech');
+}
+
+let recognition = null;
+function toggleSpeech() {
+  const btn = document.getElementById('mic-btn');
+  if (recognition) {
+    recognition.stop();
+    recognition = null;
+    btn.classList.remove('recording');
+    return;
+  }
+
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('Spracherkennung wird in diesem Browser nicht unterstützt. Bitte Chrome verwenden.');
+    return;
+  }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'de-DE';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  btn.classList.add('recording');
+
+  recognition.onresult = (e) => {
+    let text = '';
+    for (let i = 0; i < e.results.length; i++) {
+      text += e.results[i][0].transcript;
+    }
+    speechText = text;
+    document.getElementById('speech-result').textContent = '„' + text + '"';
+    document.getElementById('process-btn').disabled = false;
+  };
+
+  recognition.onerror = (e) => {
+    btn.classList.remove('recording');
+    recognition = null;
+    if (e.error !== 'no-speech') {
+      document.getElementById('speech-result').textContent = 'Fehler: ' + e.error;
+    }
+  };
+
+  recognition.onend = () => {
+    btn.classList.remove('recording');
+    recognition = null;
+  };
+
+  recognition.start();
+}
+
+// ============================================
+// SPEECH PROCESSING / FUZZY MATCHING
+// ============================================
+function processSpeech() {
+  if (!speechText.trim()) return;
+
+  if (currentEntryType === 'dauerkunde') {
+    processDauerkunde();
+  } else {
+    processPrivatkunde();
+  }
+}
+
+function processDauerkunde() {
+  const fuse = new Fuse(customerTasks, { keys: ['name'], threshold: 0.4, includeScore: true });
+  const words = speechText.toLowerCase();
+
+  // Extract duration
+  const durationMatch = words.match(/(\d+)\s*(minuten|min|stunden?|std)/i);
+  let duration = 0;
+  if (durationMatch) {
+    duration = parseInt(durationMatch[1]);
+    if (/stunden?|std/i.test(durationMatch[2])) duration *= 60;
+  }
+
+  // Match tasks: split by comma or "und" and fuzzy-match each part
+  const parts = words.replace(/(\d+)\s*(minuten|min|stunden?|std)/i, '').split(/[,]+|\sund\s/);
+  confirmedTasks = [];
+
+  parts.forEach(part => {
+    part = part.trim();
+    if (!part || part.length < 2) return;
+    const results = fuse.search(part);
+    if (results.length > 0 && results[0].score < 0.5) {
+      const task = results[0].item;
+      if (!confirmedTasks.find(t => t.id === task.id)) {
+        confirmedTasks.push(task);
+      }
+    }
+  });
+
+  showConfirmScreen(duration);
+}
+
+function processPrivatkunde() {
+  const words = speechText.trim();
+
+  // Extract duration
+  const durationMatch = words.match(/(\d+)\s*(minuten|min|stunden?|std)/i);
+  let duration = 0;
+  if (durationMatch) {
+    duration = parseInt(durationMatch[1]);
+    if (/stunden?|std/i.test(durationMatch[2])) duration *= 60;
+  }
+
+  // Remove duration from text to parse the rest
+  let remaining = words.replace(/(\d+)\s*(minuten|min|stunden?|std)/i, '').trim();
+
+  // Try to extract customer name (first segment before comma or task)
+  let customerName = '';
+  let taskText = remaining;
+
+  // Simple heuristic: split by comma, first part = name if it looks like a name
+  const commaParts = remaining.split(/[,]+/).map(s => s.trim()).filter(Boolean);
+  if (commaParts.length >= 2) {
+    customerName = commaParts[0];
+    taskText = commaParts.slice(1).join(', ');
+  }
+
+  // Check if customer exists
+  if (customerName && supabase) {
+    supabase.from('customers').select('*').eq('type', 'privatkunde').ilike('name', '%' + customerName + '%').limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          selectedCustomer = { id: data[0].id, name: data[0].name };
+        } else {
+          selectedCustomer = { id: null, name: customerName, isNew: true };
+        }
+        showPrivatConfirm(taskText, duration);
+      });
+  } else {
+    selectedCustomer = { id: null, name: customerName || '', isNew: !customerName };
+    showPrivatConfirm(taskText, duration);
+  }
+}
+
+function showPrivatConfirm(taskText, duration) {
+  document.getElementById('confirm-tasks-section').classList.add('hidden');
+  document.getElementById('confirm-notes-section').classList.remove('hidden');
+  document.getElementById('confirm-notes').value = taskText;
+  document.getElementById('confirm-duration').value = duration;
+  document.getElementById('confirm-date').value = todayStr();
+
+  const custHTML = selectedCustomer && selectedCustomer.name
+    ? `<div class="input-group"><label>Kunde</label><input type="text" id="confirm-cust-name" value="${selectedCustomer.name}"></div>`
+    : `<div class="input-group"><label>Kunde</label><input type="text" id="confirm-cust-name" placeholder="Kundenname eingeben"></div>`;
+
+  document.getElementById('confirm-customer').innerHTML = custHTML;
+  showScreen('s-confirm');
+}
+
+function showConfirmScreen(duration) {
+  document.getElementById('confirm-tasks-section').classList.remove('hidden');
+  document.getElementById('confirm-notes-section').classList.add('hidden');
+
+  document.getElementById('confirm-customer').innerHTML =
+    `<div style="font-weight:600;font-size:16px;margin-bottom:4px">${selectedCustomer.name}</div>`;
+
+  renderConfirmedTasks();
+
+  // Add task dropdown for adding missed tasks
+  const addHTML = `<select id="add-task-select" style="padding:8px;border:1px solid var(--gray-border);border-radius:6px;font-size:13px;flex:1">
+    <option value="">+ Tätigkeit hinzufügen</option>
+    ${customerTasks.filter(t => !confirmedTasks.find(ct => ct.id === t.id)).map(t =>
+      `<option value="${t.id}">${t.name}</option>`).join('')}
+  </select>`;
+  document.getElementById('confirm-add-task').innerHTML = addHTML;
+  document.getElementById('add-task-select').onchange = function() {
+    if (!this.value) return;
+    const task = customerTasks.find(t => t.id === this.value);
+    if (task) { confirmedTasks.push(task); showConfirmScreen(document.getElementById('confirm-duration').value); }
+  };
+
+  document.getElementById('confirm-duration').value = duration;
+  document.getElementById('confirm-date').value = todayStr();
+  showScreen('s-confirm');
+}
+
+function renderConfirmedTasks() {
+  document.getElementById('confirm-tasks').innerHTML = confirmedTasks.map((t, i) => `
+    <div class="confirm-item">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      <span style="font-size:14px;flex:1">${t.name}</span>
+      <button class="remove" onclick="removeConfirmedTask(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function removeConfirmedTask(i) {
+  confirmedTasks.splice(i, 1);
+  showConfirmScreen(document.getElementById('confirm-duration').value);
+}
+
+function manualEntry() {
+  if (currentEntryType === 'dauerkunde') {
+    confirmedTasks = [];
+    showConfirmScreen(0);
+  } else {
+    selectedCustomer = { id: null, name: '', isNew: true };
+    showPrivatConfirm('', 0);
+  }
+}
+
+// ============================================
+// SAVE ENTRY
+// ============================================
+async function saveEntry() {
+  if (!supabase) { alert('Nicht verbunden'); return; }
+
+  const date = document.getElementById('confirm-date').value;
+  const duration = parseInt(document.getElementById('confirm-duration').value) || 0;
+
+  if (currentEntryType === 'privatkunde') {
+    const nameInput = document.getElementById('confirm-cust-name');
+    const custName = nameInput ? nameInput.value.trim() : '';
+    const notes = document.getElementById('confirm-notes').value.trim();
+
+    if (!custName) { alert('Bitte Kundenname eingeben'); return; }
+
+    let custId = selectedCustomer?.id;
+    if (!custId || selectedCustomer?.isNew) {
+      const { data: newCust } = await supabase.from('customers')
+        .insert({ name: custName, type: 'privatkunde' }).select().single();
+      if (newCust) custId = newCust.id;
+    }
+
+    await supabase.from('visits').insert({
+      customer_id: custId, date, duration_minutes: duration, notes
+    });
+
+  } else {
+    // Check for existing visit on same date for same customer
+    const { data: existing } = await supabase.from('visits')
+      .select('id').eq('customer_id', selectedCustomer.id).eq('date', date).limit(1);
+
+    let visitId;
+    if (existing && existing.length > 0) {
+      visitId = existing[0].id;
+      await supabase.from('visits').update({ duration_minutes: duration }).eq('id', visitId);
+      // Remove old task entries for this visit
+      await supabase.from('visit_tasks').delete().eq('visit_id', visitId);
+    } else {
+      const { data: newVisit } = await supabase.from('visits')
+        .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration })
+        .select().single();
+      if (newVisit) visitId = newVisit.id;
+    }
+
+    if (visitId && confirmedTasks.length > 0) {
+      const taskRows = confirmedTasks.map(t => ({ visit_id: visitId, task_id: t.id }));
+      await supabase.from('visit_tasks').insert(taskRows);
+    }
+  }
+
+  showScreen('s-home');
+  loadRecentEntries();
+}
+
+// ============================================
+// MONTH TABLE (Dauerkunde)
+// ============================================
+async function openMonthTable(customerId) {
+  if (!supabase) return;
+  selectedCustomer = { id: customerId };
+
+  const { data: cust } = await supabase.from('customers').select('*').eq('id', customerId).single();
+  if (cust) selectedCustomer.name = cust.name;
+
+  currentMonth = new Date();
+  showScreen('s-month-table');
+  renderMonthTable();
+}
+
+async function renderMonthTable() {
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const label = MONTHS_DE[month] + ' ' + year;
+
+  document.getElementById('month-label').textContent = label;
+  document.getElementById('month-table-title').textContent = selectedCustomer.name;
+  document.getElementById('print-title').textContent = `${selectedCustomer.name} — ${label}`;
+  document.getElementById('print-subtitle').textContent = 'Hausmeister Imiolek · Arbeitsstundenaufstellung';
+
+  // Load tasks
+  const { data: tasks } = await supabase.from('customer_tasks')
+    .select('*').eq('customer_id', selectedCustomer.id).order('sort_order');
+
+  // Load visits for this month
+  const startDate = `${year}-${String(month+1).padStart(2,'0')}-01`;
+  const endDate = `${year}-${String(month+1).padStart(2,'0')}-${daysInMonth}`;
+  const { data: visits } = await supabase.from('visits')
+    .select('*, visit_tasks(task_id)')
+    .eq('customer_id', selectedCustomer.id)
+    .gte('date', startDate).lte('date', endDate);
+
+  // Build lookup: day → { tasks: Set, duration }
+  const dayData = {};
+  (visits || []).forEach(v => {
+    const day = parseInt(v.date.split('-')[2]);
+    dayData[day] = {
+      tasks: new Set((v.visit_tasks || []).map(vt => vt.task_id)),
+      duration: v.duration_minutes
+    };
+  });
+
+  if (!tasks || tasks.length === 0) {
+    document.getElementById('month-table-wrap').innerHTML = '<div class="empty">Keine Tätigkeiten für diesen Kunden hinterlegt</div>';
+    return;
+  }
+
+  let html = '<table class="print-table"><thead><tr><th style="text-align:left;min-width:90px">Tätigkeit</th>';
+  for (let d = 1; d <= daysInMonth; d++) html += `<th>${d}</th>`;
+  html += '<th>Ges.</th></tr></thead><tbody>';
+
+  tasks.forEach(task => {
+    html += `<tr><td class="task-name" title="${task.name}">${task.name}</td>`;
+    let count = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const done = dayData[d] && dayData[d].tasks.has(task.id);
+      if (done) count++;
+      html += `<td>${done ? '<span class="check">✓</span>' : ''}</td>`;
+    }
+    html += `<td style="font-weight:500">${count || ''}</td></tr>`;
+  });
+
+  // Duration row
+  html += '<tr style="border-top:2px solid var(--gray-border)"><td class="task-name" style="font-weight:600">Gesamt (Min.)</td>';
+  let totalMin = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dur = dayData[d] ? dayData[d].duration : 0;
+    totalMin += dur;
+    html += `<td style="font-weight:500">${dur || ''}</td>`;
+  }
+  html += `<td style="font-weight:700">${totalMin}</td></tr>`;
+  html += '</tbody></table>';
+
+  document.getElementById('month-table-wrap').innerHTML = html;
+
+  const visitCount = Object.keys(dayData).length;
+  document.getElementById('month-summary').innerHTML =
+    `<span>${visitCount} Einsätze</span><strong>${totalMin} Min. gesamt</strong>`;
+}
+
+function changeMonth(delta) {
+  currentMonth.setMonth(currentMonth.getMonth() + delta);
+  renderMonthTable();
+}
+
+// ============================================
+// PRIVATE ENTRIES LIST
+// ============================================
+async function loadPrivateEntries() {
+  if (!supabase) return;
+  const year = privMonth.getFullYear();
+  const month = privMonth.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const label = MONTHS_DE[month] + ' ' + year;
+  document.getElementById('priv-month-label').textContent = label;
+
+  const startDate = `${year}-${String(month+1).padStart(2,'0')}-01`;
+  const endDate = `${year}-${String(month+1).padStart(2,'0')}-${daysInMonth}`;
+
+  const { data } = await supabase.from('visits')
+    .select('*, customers!inner(name, type)')
+    .eq('customers.type', 'privatkunde')
+    .gte('date', startDate).lte('date', endDate)
+    .order('date', { ascending: false });
+
+  const el = document.getElementById('priv-entries-list');
+  if (!data || data.length === 0) {
+    el.innerHTML = '<div class="empty">Keine Einträge in diesem Monat</div>';
+    document.getElementById('priv-summary').innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = data.map(v => `
+    <div class="list-item">
+      <div>
+        <div class="name">${v.customers.name}</div>
+        <div class="meta">${v.notes || '-'}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:500;font-size:13px">${v.duration_minutes} Min.</div>
+        <div class="meta">${formatDate(v.date)}</div>
+      </div>
+    </div>
+  `).join('');
+
+  const total = data.reduce((s, v) => s + v.duration_minutes, 0);
+  document.getElementById('priv-summary').innerHTML =
+    `<span>${data.length} Einsätze</span><strong>${total} Min. gesamt</strong>`;
+}
+
+function changePrivMonth(delta) {
+  privMonth.setMonth(privMonth.getMonth() + delta);
+  loadPrivateEntries();
+}
+
+// ============================================
+// CUSTOMER MANAGEMENT
+// ============================================
+async function loadAllCustomers() {
+  if (!supabase) return;
+  const { data } = await supabase.from('customers').select('*').order('name');
+  allCustomers = data || [];
+  renderAllCustomers();
+}
+
+function renderAllCustomers() {
+  const list = customerFilter === 'all'
+    ? allCustomers
+    : allCustomers.filter(c => c.type === customerFilter);
+
+  const el = document.getElementById('all-customers-list');
+  if (list.length === 0) {
+    el.innerHTML = '<div class="empty">Keine Kunden</div>';
+    return;
+  }
+  el.innerHTML = list.map(c => {
+    const badge = c.type === 'dauerkunde'
+      ? '<span class="customer-type-badge" style="background:var(--blue-bg);color:var(--blue)">Dauerkunde</span>'
+      : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">Privatkunde</span>';
+    const tableBtn = c.type === 'dauerkunde'
+      ? `<button style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer" onclick="openMonthTable('${c.id}')">📋 Tabelle</button>` : '';
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div>
+          <div style="font-weight:500">${c.name}</div>
+          <div style="font-size:12px;color:var(--text-sec)">${c.address || ''}</div>
+          <div style="margin-top:4px">${badge}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:end">
+          ${tableBtn}
+          <button style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer" onclick="deleteCustomer('${c.id}','${c.name.replace(/'/g,"\\'")}')">Löschen</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterCustomerList(type, btn) {
+  customerFilter = type;
+  document.querySelectorAll('#s-customers .toggle-group button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAllCustomers();
+}
+
+async function deleteCustomer(id, name) {
+  if (!confirm('Kunde "' + name + '" und alle Einträge wirklich löschen?')) return;
+  await supabase.from('customers').delete().eq('id', id);
+  loadAllCustomers();
+}
+
+// ============================================
+// NEW CUSTOMER
+// ============================================
+function initNewCustomerForm() {
+  document.getElementById('new-cust-name').value = '';
+  document.getElementById('new-cust-address').value = '';
+  newCustType = 'dauerkunde';
+  document.querySelectorAll('#new-cust-type button').forEach((b, i) => {
+    b.classList.toggle('active', i === 0);
+  });
+  renderNewCustTasks();
+  document.getElementById('new-cust-tasks-section').style.display = '';
+}
+
+function setNewCustType(type, btn) {
+  newCustType = type;
+  document.querySelectorAll('#new-cust-type button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('new-cust-tasks-section').style.display = type === 'dauerkunde' ? '' : 'none';
+}
+
+let customTasksExtra = [];
+function renderNewCustTasks() {
+  const all = [...DEFAULT_TASKS, ...customTasksExtra];
+  document.getElementById('new-cust-tasks').innerHTML = all.map((t, i) => `
+    <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer">
+      <input type="checkbox" class="new-task-cb" value="${i}" ${i < DEFAULT_TASKS.length ? 'checked' : 'checked'}>
+      ${t}
+    </label>
+  `).join('');
+}
+
+function addCustomTask() {
+  const input = document.getElementById('new-custom-task');
+  const name = input.value.trim();
+  if (!name) return;
+  customTasksExtra.push(name);
+  renderNewCustTasks();
+  input.value = '';
+}
+
+async function saveNewCustomer() {
+  const name = document.getElementById('new-cust-name').value.trim();
+  const address = document.getElementById('new-cust-address').value.trim();
+  if (!name) { alert('Bitte Kundenname eingeben'); return; }
+
+  const { data: cust } = await supabase.from('customers')
+    .insert({ name, type: newCustType, address }).select().single();
+
+  if (cust && newCustType === 'dauerkunde') {
+    const allTasks = [...DEFAULT_TASKS, ...customTasksExtra];
+    const checked = document.querySelectorAll('.new-task-cb:checked');
+    const tasks = Array.from(checked).map((cb, i) => ({
+      customer_id: cust.id,
+      name: allTasks[parseInt(cb.value)],
+      sort_order: i
+    }));
+    if (tasks.length > 0) {
+      await supabase.from('customer_tasks').insert(tasks);
+    }
+  }
+
+  customTasksExtra = [];
+  alert('Kunde "' + name + '" angelegt!');
+  showScreen('s-customers');
+}
+
+// ============================================
+// HELPERS
+// ============================================
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function formatDate(str) {
+  const [y, m, d] = str.split('-');
+  return `${d}.${m}.`;
+}
+
+function formatDateLong(date) {
+  return `${date.getDate()}. ${MONTHS_DE[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// Start
+init();
+</script>
+</body>
+</html>
