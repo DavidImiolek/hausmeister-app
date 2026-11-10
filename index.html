@@ -567,8 +567,11 @@ function processSpeech() {
 }
 
 function processDauerkunde() {
-  const fuse = new Fuse(customerTasks, { keys: ['name'], threshold: 0.4, includeScore: true });
+  const fuse = new Fuse(customerTasks, { keys: ['name'], threshold: 0.5, includeScore: true });
   const words = speechText.toLowerCase();
+
+  console.log('[HS] speechText:', words);
+  console.log('[HS] customerTasks loaded:', customerTasks.length);
 
   // Extract duration
   const durationMatch = words.match(/(\d+)\s*(minuten|min|stunden?|std)/i);
@@ -578,15 +581,30 @@ function processDauerkunde() {
     if (/stunden?|std/i.test(durationMatch[2])) duration *= 60;
   }
 
-  // Match tasks: split by comma or "und" and fuzzy-match each part
-  const parts = words.replace(/(\d+)\s*(minuten|min|stunden?|std)/i, '').split(/[,]+|\sund\s/);
+  // Remove duration from text
+  let cleaned = words.replace(/(\d+)\s*(minuten|min|stunden?|std)/gi, '').trim();
+
+  // Strategy 1: Try each task name as a search against the full text
+  // This works even without commas — scan if any known task appears
   confirmedTasks = [];
+  customerTasks.forEach(task => {
+    const taskLower = task.name.toLowerCase();
+    // Direct substring match (e.g. "rasen gemäht" found in speech)
+    if (cleaned.includes(taskLower) || cleaned.includes(taskLower.replace(/[,.\-\/()]/g, ' ').trim())) {
+      if (!confirmedTasks.find(t => t.id === task.id)) {
+        confirmedTasks.push(task);
+      }
+    }
+  });
+
+  // Strategy 2: Split by comma, "und", or period and fuzzy-match remaining parts
+  const parts = cleaned.split(/[,.\n]+|\sund\s/).map(s => s.trim()).filter(s => s.length >= 3);
+  console.log('[HS] parts after split:', parts);
 
   parts.forEach(part => {
-    part = part.trim();
-    if (!part || part.length < 2) return;
     const results = fuse.search(part);
-    if (results.length > 0 && results[0].score < 0.5) {
+    console.log('[HS] fuzzy "' + part + '" →', results.length > 0 ? results[0].item.name + ' (' + results[0].score.toFixed(3) + ')' : 'no match');
+    if (results.length > 0 && results[0].score < 0.6) {
       const task = results[0].item;
       if (!confirmedTasks.find(t => t.id === task.id)) {
         confirmedTasks.push(task);
@@ -594,6 +612,24 @@ function processDauerkunde() {
     }
   });
 
+  // Strategy 3: Try sliding window of 2-3 words for multi-word task names
+  if (confirmedTasks.length === 0) {
+    const wordList = cleaned.split(/\s+/);
+    for (let windowSize = 3; windowSize >= 2; windowSize--) {
+      for (let i = 0; i <= wordList.length - windowSize; i++) {
+        const phrase = wordList.slice(i, i + windowSize).join(' ');
+        const results = fuse.search(phrase);
+        if (results.length > 0 && results[0].score < 0.6) {
+          const task = results[0].item;
+          if (!confirmedTasks.find(t => t.id === task.id)) {
+            confirmedTasks.push(task);
+          }
+        }
+      }
+    }
+  }
+
+  console.log('[HS] matched tasks:', confirmedTasks.map(t => t.name));
   showConfirmScreen(duration);
 }
 
