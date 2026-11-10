@@ -539,11 +539,22 @@ function startRecognition() {
   btn.classList.add('recording');
 
   recognition.onresult = (e) => {
-    let sessionText = '';
+    let finalText = '';
+    let interimText = '';
     for (let i = 0; i < e.results.length; i++) {
-      sessionText += e.results[i][0].transcript;
+      const transcript = e.results[i][0].transcript;
+      if (e.results[i].isFinal) {
+        finalText += ' ' + transcript;
+      } else {
+        interimText += ' ' + transcript;
+      }
     }
-    speechText = (collectedText + ' ' + sessionText).trim();
+    // Finalisierte Teile dauerhaft in collectedText übernehmen
+    if (finalText.trim()) {
+      collectedText = (collectedText + ' ' + finalText).trim();
+    }
+    // Anzeige: gesammelte finale + aktuelle interim
+    speechText = (collectedText + ' ' + interimText).trim();
     document.getElementById('speech-result').textContent = '„' + speechText + '"';
     document.getElementById('process-btn').disabled = false;
   };
@@ -562,14 +573,8 @@ function startRecognition() {
   };
 
   recognition.onend = () => {
-    // Text dieser Session sichern bevor Neustart
-    let sessionText = '';
-    const el = document.getElementById('speech-result').textContent;
-    speechText = el.replace(/^„|"$/g, '').trim();
-    collectedText = speechText;
-
+    // speechText und collectedText sind bereits aktuell aus onresult
     if (keepListening) {
-      // Automatisch neu starten — Text bleibt erhalten
       recognition = null;
       startRecognition();
     } else {
