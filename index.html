@@ -505,9 +505,13 @@ function openSpeechScreen() {
 }
 
 let recognition = null;
+let keepListening = false;
+let collectedText = '';
+
 function toggleSpeech() {
   const btn = document.getElementById('mic-btn');
   if (recognition) {
+    keepListening = false;
     recognition.stop();
     recognition = null;
     btn.classList.remove('recording');
@@ -519,6 +523,13 @@ function toggleSpeech() {
     return;
   }
 
+  collectedText = '';
+  keepListening = true;
+  startRecognition();
+}
+
+function startRecognition() {
+  const btn = document.getElementById('mic-btn');
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SR();
   recognition.lang = 'de-DE';
@@ -528,26 +539,43 @@ function toggleSpeech() {
   btn.classList.add('recording');
 
   recognition.onresult = (e) => {
-    let text = '';
+    let sessionText = '';
     for (let i = 0; i < e.results.length; i++) {
-      text += e.results[i][0].transcript;
+      sessionText += e.results[i][0].transcript;
     }
-    speechText = text;
-    document.getElementById('speech-result').textContent = '„' + text + '"';
+    speechText = (collectedText + ' ' + sessionText).trim();
+    document.getElementById('speech-result').textContent = '„' + speechText + '"';
     document.getElementById('process-btn').disabled = false;
   };
 
   recognition.onerror = (e) => {
+    if (e.error === 'no-speech' && keepListening) {
+      // Stille — einfach neu starten
+      recognition = null;
+      startRecognition();
+      return;
+    }
     btn.classList.remove('recording');
     recognition = null;
-    if (e.error !== 'no-speech') {
-      document.getElementById('speech-result').textContent = 'Fehler: ' + e.error;
-    }
+    keepListening = false;
+    document.getElementById('speech-result').textContent = 'Fehler: ' + e.error;
   };
 
   recognition.onend = () => {
-    btn.classList.remove('recording');
-    recognition = null;
+    // Text dieser Session sichern bevor Neustart
+    let sessionText = '';
+    const el = document.getElementById('speech-result').textContent;
+    speechText = el.replace(/^„|"$/g, '').trim();
+    collectedText = speechText;
+
+    if (keepListening) {
+      // Automatisch neu starten — Text bleibt erhalten
+      recognition = null;
+      startRecognition();
+    } else {
+      btn.classList.remove('recording');
+      recognition = null;
+    }
   };
 
   recognition.start();
