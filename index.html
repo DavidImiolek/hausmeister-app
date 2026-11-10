@@ -665,25 +665,56 @@ function processPrivatkunde() {
   const words = speechText.trim();
 
   // Extract duration
-  const durationMatch = words.match(/(\d+)\s*(minuten|min|stunden?|std)/i);
+  const durationMatch = words.match(/(\d+)\s*(minuten|min|stunden?|std|halbe\s*stunde)/i);
   let duration = 0;
   if (durationMatch) {
     duration = parseInt(durationMatch[1]);
     if (/stunden?|std/i.test(durationMatch[2])) duration *= 60;
+    if (/halbe\s*stunde/i.test(durationMatch[0])) duration = 30;
   }
 
-  // Remove duration from text to parse the rest
-  let remaining = words.replace(/(\d+)\s*(minuten|min|stunden?|std)/i, '').trim();
+  // Remove duration from text
+  let remaining = words.replace(/(\d+)\s*(minuten|min|stunden?|std)/gi, '')
+    .replace(/halbe\s*stunde/gi, '').trim();
 
-  // Try to extract customer name (first segment before comma or task)
   let customerName = '';
   let taskText = remaining;
 
-  // Simple heuristic: split by comma, first part = name if it looks like a name
+  // Strategy 1: Comma-separated → first part = name, rest = task
   const commaParts = remaining.split(/[,]+/).map(s => s.trim()).filter(Boolean);
   if (commaParts.length >= 2) {
     customerName = commaParts[0];
     taskText = commaParts.slice(1).join(', ');
+  }
+  // Strategy 2: Detect name by Anrede (Herr/Frau/Familie/Firma + next word(s))
+  else {
+    const anredeMatch = remaining.match(/^((?:herr|frau|familie|firma|hr\.?|fr\.?)\s+\S+(?:\s+\S+)?)/i);
+    if (anredeMatch) {
+      // Name = Anrede + 1 word, rest = task
+      // But we need to figure out where name ends and task starts
+      // Try Anrede + 1 word first, then check if remaining makes sense
+      const nameCandidate = remaining.match(/^((?:herr|frau|familie|firma|hr\.?|fr\.?)\s+\S+)/i);
+      if (nameCandidate) {
+        customerName = nameCandidate[1].trim();
+        taskText = remaining.substring(nameCandidate[0].length).trim();
+      }
+    }
+    // Strategy 3: If first word is a capitalized name-like word (2+ chars, no common German words)
+    else {
+      const wordList = remaining.split(/\s+/);
+      const commonWords = ['der','die','das','ein','eine','bei','für','und','oder','in','am','im','an','auf','mit','zum','zur','nach','von','ist','hat','war','hab','habe','mal','noch','auch','nur','schon'];
+      if (wordList.length >= 2 && !commonWords.includes(wordList[0].toLowerCase()) && wordList[0].length >= 2) {
+        // Check if second word is also name-like (not a common verb/noun)
+        const taskVerbs = ['mähen','rasenmähen','putzen','reinigen','kehren','streuen','schneiden','pflegen','reparieren','montieren','wechseln','entfernen','säubern','waschen','lackieren','streichen','fegen','saugen','wischen','leeren','entsorgen','abholen','bringen','einbauen','ausbauen','prüfen','kontrollieren'];
+        if (taskVerbs.some(v => wordList[1].toLowerCase().startsWith(v.substring(0, 4)))) {
+          customerName = wordList[0];
+          taskText = wordList.slice(1).join(' ');
+        } else if (wordList.length >= 3 && taskVerbs.some(v => wordList[2].toLowerCase().startsWith(v.substring(0, 4)))) {
+          customerName = wordList.slice(0, 2).join(' ');
+          taskText = wordList.slice(2).join(' ');
+        }
+      }
+    }
   }
 
   // Check if customer exists
