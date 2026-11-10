@@ -356,16 +356,13 @@ const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','Augus
 // INIT
 // ============================================
 function init() {
-  const url = localStorage.getItem('sb_url');
-  const key = localStorage.getItem('sb_key');
-  if (url && key) {
-    connectSupabase(url, key);
-    document.getElementById('set-url').value = url;
-    document.getElementById('set-key').value = key;
-  } else {
-    showScreen('s-settings');
-    return;
-  }
+  const url = localStorage.getItem('sb_url') || 'https://hcefeifetaonhnxzdgak.supabase.co';
+  const key = localStorage.getItem('sb_key') || 'sb_publishable_YTmQmOUVfvxP1zPe7bagvw_79F85Qet';
+  localStorage.setItem('sb_url', url);
+  localStorage.setItem('sb_key', key);
+  connectSupabase(url, key);
+  document.getElementById('set-url').value = url;
+  document.getElementById('set-key').value = key;
   loadRecentEntries();
 }
 
