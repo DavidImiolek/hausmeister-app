@@ -175,7 +175,7 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
         <p style="font-size:13px;color:var(--blue);font-weight:600;margin-bottom:4px">🎤 Tipp: Tastatur-Mikrofon nutzen</p>
         <p style="font-size:12px;color:var(--text-sec)">Tippe ins Textfeld und nutze das Mikrofon-Symbol auf deiner Tastatur zum Diktieren.</p>
       </div>
-      <textarea id="speech-keyboard-input" rows="3" placeholder="Hier tippen oder per Tastatur-Mikrofon diktieren..." style="width:100%;padding:12px;border:1px solid var(--gray-border);border-radius:8px;font-size:15px" oninput="onKeyboardInput()"></textarea>
+      <textarea id="speech-keyboard-input" rows="3" placeholder="Hier tippen oder per Tastatur-Mikrofon diktieren..." style="width:100%;padding:12px;border:1px solid var(--gray-border);border-radius:8px;font-size:15px" oninput="onKeyboardInput()" onchange="onKeyboardInput()" onkeyup="onKeyboardInput()"></textarea>
     </div>
 
     <div class="speech-result" id="speech-result">Noch nichts erkannt...</div>
@@ -521,6 +521,15 @@ function openSpeechScreen() {
   if (isAndroid) {
     document.getElementById('speech-keyboard-input').value = '';
     document.getElementById('speech-result').textContent = '';
+    // Polling als Fallback: Android-Diktat feuert oft keine Events
+    clearInterval(window._keyboardPoll);
+    window._keyboardPoll = setInterval(() => {
+      if (document.getElementById('s-speech')?.classList.contains('active')) {
+        onKeyboardInput();
+      } else {
+        clearInterval(window._keyboardPoll);
+      }
+    }, 300);
   }
   showScreen('s-speech');
 }
