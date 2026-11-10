@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -105,44 +105,44 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
       <h1>Hausmeister Imiolek</h1>
       <p style="font-size:13px;color:var(--text-sec)">Auftragserfassung</p>
     </div>
-    <button class="back" onclick="showScreen('s-settings')" title="Einstellungen">âš™</button>
+    <button class="back" onclick="showScreen('s-settings')" title="Einstellungen">⚙</button>
   </header>
   <div class="content">
     <div class="card card-action" onclick="startEntry('dauerkunde')" style="background:var(--blue-bg);border-color:transparent;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:12px">
-        <div style="font-size:24px">ðŸ¢</div>
+        <div style="font-size:24px">🏢</div>
         <div style="flex:1">
           <div style="font-weight:600;color:var(--blue)">Dauerkunde</div>
-          <div style="font-size:12px;color:var(--blue);opacity:.7">Monatstabelle mit TÃ¤tigkeiten</div>
+          <div style="font-size:12px;color:var(--blue);opacity:.7">Monatstabelle mit Tätigkeiten</div>
         </div>
-        <div style="color:var(--blue)">â€º</div>
+        <div style="color:var(--blue)">›</div>
       </div>
     </div>
     <div class="card card-action" onclick="startEntry('privatkunde')" style="background:var(--green-bg);border-color:transparent;margin-bottom:20px">
       <div style="display:flex;align-items:center;gap:12px">
-        <div style="font-size:24px">ðŸ‘¤</div>
+        <div style="font-size:24px">👤</div>
         <div style="flex:1">
           <div style="font-weight:600;color:var(--green)">Privatkunde</div>
           <div style="font-size:12px;color:var(--green);opacity:.7">Einzelauftrag erfassen</div>
         </div>
-        <div style="color:var(--green)">â€º</div>
+        <div style="color:var(--green)">›</div>
       </div>
     </div>
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <span style="font-size:13px;color:var(--text-sec);font-weight:500">Letzte EintrÃ¤ge</span>
+      <span style="font-size:13px;color:var(--text-sec);font-weight:500">Letzte Einträge</span>
       <button style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer" onclick="showScreen('s-history')">Alle anzeigen</button>
     </div>
     <div id="recent-entries"></div>
   </div>
-  <button class="fab no-print" onclick="showScreen('s-customers')">â˜°</button>
+  <button class="fab no-print" onclick="showScreen('s-customers')">☰</button>
 </div>
 
-<!-- ========== SCREEN: KUNDEN AUSWÃ„HLEN (Dauerkunde) ========== -->
+<!-- ========== SCREEN: KUNDEN AUSWÄHLEN (Dauerkunde) ========== -->
 <div id="s-select-customer" class="screen">
   <header>
-    <button class="back" onclick="showScreen('s-home')">â†</button>
-    <h1 id="select-customer-title">Kunde wÃ¤hlen</h1>
+    <button class="back" onclick="showScreen('s-home')">←</button>
+    <h1 id="select-customer-title">Kunde wählen</h1>
   </header>
   <div class="content">
     <input type="text" id="customer-search" placeholder="Kunde suchen..." style="width:100%;padding:10px 12px;border:1px solid var(--gray-border);border-radius:8px;font-size:15px;margin-bottom:16px" oninput="filterCustomers()">
@@ -154,7 +154,7 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
 <!-- ========== SCREEN: SPRACHEINGABE ========== -->
 <div id="s-speech" class="screen">
   <header>
-    <button class="back" onclick="showScreen(currentEntryType==='dauerkunde'?'s-select-customer':'s-home')">â†</button>
+    <button class="back" onclick="showScreen(currentEntryType==='dauerkunde'?'s-select-customer':'s-home')">←</button>
     <h1 id="speech-title">Eintrag</h1>
   </header>
   <div class="content" style="text-align:center">
@@ -173,24 +173,24 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
   </div>
 </div>
 
-<!-- ========== SCREEN: BESTÃ„TIGUNG ========== -->
+<!-- ========== SCREEN: BESTÄTIGUNG ========== -->
 <div id="s-confirm" class="screen">
   <header>
-    <button class="back" onclick="showScreen('s-speech')">â†</button>
-    <h1>BestÃ¤tigung</h1>
+    <button class="back" onclick="showScreen('s-speech')">←</button>
+    <h1>Bestätigung</h1>
   </header>
   <div class="content">
     <div id="confirm-customer" style="margin-bottom:16px"></div>
 
     <div id="confirm-tasks-section">
-      <div style="font-size:13px;color:var(--text-sec);margin-bottom:8px">Erkannte TÃ¤tigkeiten</div>
+      <div style="font-size:13px;color:var(--text-sec);margin-bottom:8px">Erkannte Tätigkeiten</div>
       <div id="confirm-tasks"></div>
       <div id="confirm-add-task" style="margin-top:8px"></div>
     </div>
 
     <div id="confirm-notes-section" class="hidden">
       <div class="input-group">
-        <label>TÃ¤tigkeit</label>
+        <label>Tätigkeit</label>
         <textarea id="confirm-notes" rows="2"></textarea>
       </div>
     </div>
@@ -201,13 +201,13 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
     </div>
 
     <div class="duration-box">
-      <span style="font-size:14px">â± Gesamtzeit:</span>
+      <span style="font-size:14px">⏱ Gesamtzeit:</span>
       <input type="number" id="confirm-duration" min="0" step="5" value="0">
       <span style="font-size:14px">Minuten</span>
     </div>
 
     <div class="flex-row" style="margin-top:20px">
-      <button class="btn btn-outline" onclick="showScreen('s-speech')">ZurÃ¼ck</button>
+      <button class="btn btn-outline" onclick="showScreen('s-speech')">Zurück</button>
       <button class="btn btn-primary" onclick="saveEntry()">Speichern</button>
     </div>
   </div>
@@ -216,7 +216,7 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
 <!-- ========== SCREEN: MONATSTABELLE ========== -->
 <div id="s-month-table" class="screen">
   <header class="no-print">
-    <button class="back" onclick="showScreen('s-home')">â†</button>
+    <button class="back" onclick="showScreen('s-home')">←</button>
     <h1 id="month-table-title">Monatstabelle</h1>
   </header>
   <div class="content">
@@ -225,20 +225,20 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
       <p id="print-subtitle"></p>
     </div>
     <div class="month-nav no-print">
-      <button onclick="changeMonth(-1)">â€¹</button>
+      <button onclick="changeMonth(-1)">‹</button>
       <span id="month-label"></span>
-      <button onclick="changeMonth(1)">â€º</button>
+      <button onclick="changeMonth(1)">›</button>
     </div>
     <div class="table-wrap" id="month-table-wrap"></div>
     <div class="summary no-print" id="month-summary"></div>
-    <button class="btn btn-outline no-print" style="margin-top:12px" onclick="window.print()">ðŸ–¨ Drucken</button>
+    <button class="btn btn-outline no-print" style="margin-top:12px" onclick="window.print()">🖨 Drucken</button>
   </div>
 </div>
 
 <!-- ========== SCREEN: KUNDEN VERWALTEN ========== -->
 <div id="s-customers" class="screen">
   <header>
-    <button class="back" onclick="showScreen('s-home')">â†</button>
+    <button class="back" onclick="showScreen('s-home')">←</button>
     <h1>Kunden</h1>
   </header>
   <div class="content">
@@ -255,7 +255,7 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
 <!-- ========== SCREEN: NEUER KUNDE ========== -->
 <div id="s-new-customer" class="screen">
   <header>
-    <button class="back" onclick="showScreen('s-customers')">â†</button>
+    <button class="back" onclick="showScreen('s-customers')">←</button>
     <h1>Neuer Kunde</h1>
   </header>
   <div class="content">
@@ -272,10 +272,10 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
       <input type="text" id="new-cust-address" placeholder="z.B. Ampfing, Hauptstr. 5">
     </div>
     <div id="new-cust-tasks-section">
-      <div style="font-size:13px;color:var(--text-sec);margin-bottom:8px">TÃ¤tigkeiten auswÃ¤hlen</div>
+      <div style="font-size:13px;color:var(--text-sec);margin-bottom:8px">Tätigkeiten auswählen</div>
       <div id="new-cust-tasks" style="background:var(--gray-light);border-radius:8px;padding:8px 12px;max-height:250px;overflow-y:auto"></div>
       <div class="add-task-row">
-        <input type="text" id="new-custom-task" placeholder="Eigene TÃ¤tigkeit...">
+        <input type="text" id="new-custom-task" placeholder="Eigene Tätigkeit...">
         <button onclick="addCustomTask()">+</button>
       </div>
     </div>
@@ -286,14 +286,14 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
 <!-- ========== SCREEN: HISTORY ========== -->
 <div id="s-history" class="screen">
   <header>
-    <button class="back" onclick="showScreen('s-home')">â†</button>
+    <button class="back" onclick="showScreen('s-home')">←</button>
     <h1>Privatkunden</h1>
   </header>
   <div class="content">
     <div class="month-nav">
-      <button onclick="changePrivMonth(-1)">â€¹</button>
+      <button onclick="changePrivMonth(-1)">‹</button>
       <span id="priv-month-label"></span>
-      <button onclick="changePrivMonth(1)">â€º</button>
+      <button onclick="changePrivMonth(1)">›</button>
     </div>
     <div id="priv-entries-list"></div>
     <div class="summary" id="priv-summary"></div>
@@ -303,7 +303,7 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
 <!-- ========== SCREEN: SETTINGS ========== -->
 <div id="s-settings" class="screen">
   <header>
-    <button class="back" onclick="showScreen('s-home')">â†</button>
+    <button class="back" onclick="showScreen('s-home')">←</button>
     <h1>Einstellungen</h1>
   </header>
   <div class="content">
@@ -324,7 +324,7 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
 // ============================================
 // CONFIG & STATE
 // ============================================
-let supabase = null;
+let db = null;
 let currentEntryType = '';
 let selectedCustomer = null;
 let customerTasks = [];
@@ -337,20 +337,20 @@ let customerFilter = 'all';
 let newCustType = 'dauerkunde';
 
 const DEFAULT_TASKS = [
-  'Treppen/Flure kehren, wischen','BriefkÃ¤sten reinigen','HaustÃ¼re reinigen',
-  'Hausabstreifer sÃ¤ubern','FuÃŸabstreifer sÃ¤ubern','HandlÃ¤ufe reinigen',
-  'KellerrÃ¤ume kehren, waschen','Trockenraum kehren','Aufzug putzen',
-  'Fenster putzen','Beleuchtung kontrollieren','Hauszugang sÃ¤ubern',
-  'Wege/Parkplatz sÃ¤ubern','Heizung prÃ¼fen','MÃ¼lltonnen vorruck./platz reinigen',
-  'AuÃŸenanlagen (Unkraut, Heckeâ€¦)','AuÃŸen Gully reinigen','Rasen mÃ¤hen',
-  'Schnee rÃ¤umen','Zufahrten streuen','Wasserfilter wechseln/spÃ¼len',
-  'KellerlichtschÃ¤chte reinigen','TÃ¼ren/Fenster Ã¶len 1x/Jahr',
-  'alle AbsperrhÃ¤hne bewegen (1x/Jahr)','Reparaturen/Sonstige Arbeiten',
-  'Schilderwechsel','Info wg. WasserprÃ¼fung','Vordach reinigen',
+  'Treppen/Flure kehren, wischen','Briefkästen reinigen','Haustüre reinigen',
+  'Hausabstreifer säubern','Fußabstreifer säubern','Handläufe reinigen',
+  'Kellerräume kehren, waschen','Trockenraum kehren','Aufzug putzen',
+  'Fenster putzen','Beleuchtung kontrollieren','Hauszugang säubern',
+  'Wege/Parkplatz säubern','Heizung prüfen','Mülltonnen vorruck./platz reinigen',
+  'Außenanlagen (Unkraut, Hecke…)','Außen Gully reinigen','Rasen mähen',
+  'Schnee räumen','Zufahrten streuen','Wasserfilter wechseln/spülen',
+  'Kellerlichtschächte reinigen','Türen/Fenster ölen 1x/Jahr',
+  'alle Absperrhähne bewegen (1x/Jahr)','Reparaturen/Sonstige Arbeiten',
+  'Schilderwechsel','Info wg. Wasserprüfung','Vordach reinigen',
   'Hebepumpe und Schacht reinigen'
 ];
 
-const MONTHS_DE = ['Januar','Februar','MÃ¤rz','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 
 // ============================================
 // INIT
@@ -367,13 +367,13 @@ function init() {
 }
 
 function connectSupabase(url, key) {
-  supabase = window.supabase.createClient(url, key);
+  db = window.supabase.createClient(url, key);
 }
 
 function saveSettings() {
   const url = document.getElementById('set-url').value.trim();
   const key = document.getElementById('set-key').value.trim();
-  if (!url || !key) { alert('Bitte beide Felder ausfÃ¼llen'); return; }
+  if (!url || !key) { alert('Bitte beide Felder ausfüllen'); return; }
   localStorage.setItem('sb_url', url);
   localStorage.setItem('sb_key', key);
   connectSupabase(url, key);
@@ -397,8 +397,8 @@ function showScreen(id) {
 // RECENT ENTRIES
 // ============================================
 async function loadRecentEntries() {
-  if (!supabase) return;
-  const { data } = await supabase
+  if (!db) return;
+  const { data } = await db
     .from('visits')
     .select('*, customers(name, type)')
     .order('date', { ascending: false })
@@ -406,7 +406,7 @@ async function loadRecentEntries() {
 
   const el = document.getElementById('recent-entries');
   if (!data || data.length === 0) {
-    el.innerHTML = '<div class="empty">Noch keine EintrÃ¤ge</div>';
+    el.innerHTML = '<div class="empty">Noch keine Einträge</div>';
     return;
   }
   el.innerHTML = data.map(v => {
@@ -415,7 +415,7 @@ async function loadRecentEntries() {
       : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">PK</span>';
     return `<div class="list-item card-action" onclick="${v.customers.type === 'dauerkunde' ? `openMonthTable('${v.customer_id}')` : ''}">
       <div><div class="name">${badge} ${v.customers.name}</div>
-      <div class="meta">${v.notes || ''} Â· ${v.duration_minutes} Min.</div></div>
+      <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.</div></div>
       <div class="meta">${formatDate(v.date)}</div>
     </div>`;
   }).join('');
@@ -427,7 +427,7 @@ async function loadRecentEntries() {
 function startEntry(type) {
   currentEntryType = type;
   if (type === 'dauerkunde') {
-    document.getElementById('select-customer-title').textContent = 'Dauerkunde wÃ¤hlen';
+    document.getElementById('select-customer-title').textContent = 'Dauerkunde wählen';
     loadCustomerList('dauerkunde');
     showScreen('s-select-customer');
   } else {
@@ -437,8 +437,8 @@ function startEntry(type) {
 }
 
 async function loadCustomerList(type) {
-  if (!supabase) return;
-  const { data } = await supabase
+  if (!db) return;
+  const { data } = await db
     .from('customers')
     .select('*')
     .eq('type', type)
@@ -463,8 +463,8 @@ function renderCustomerList(data) {
           <div style="font-size:12px;color:var(--text-sec)">${c.address || ''}</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <button class="back" onclick="event.stopPropagation();openMonthTable('${c.id}')" title="Monatstabelle" style="width:32px;height:32px;font-size:14px">ðŸ“‹</button>
-          <span style="color:var(--text-sec)">â€º</span>
+          <button class="back" onclick="event.stopPropagation();openMonthTable('${c.id}')" title="Monatstabelle" style="width:32px;height:32px;font-size:14px">📋</button>
+          <span style="color:var(--text-sec)">›</span>
         </div>
       </div>
     </div>
@@ -479,7 +479,7 @@ function filterCustomers() {
 
 async function selectCustomer(id, name) {
   selectedCustomer = { id, name };
-  const { data } = await supabase
+  const { data } = await db
     .from('customer_tasks')
     .select('*')
     .eq('customer_id', id)
@@ -496,7 +496,7 @@ function openSpeechScreen() {
     ? selectedCustomer.name : 'Privatkunde';
   document.getElementById('speech-title').textContent = title;
   document.getElementById('speech-subtitle').textContent =
-    currentEntryType === 'dauerkunde' ? 'TÃ¤tigkeiten einsprechen' : 'Name, TÃ¤tigkeit, Dauer einsprechen';
+    currentEntryType === 'dauerkunde' ? 'Tätigkeiten einsprechen' : 'Name, Tätigkeit, Dauer einsprechen';
   document.getElementById('speech-date').textContent = formatDateLong(new Date());
   document.getElementById('speech-result').textContent = 'Noch nichts erkannt...';
   document.getElementById('process-btn').disabled = true;
@@ -515,7 +515,7 @@ function toggleSpeech() {
   }
 
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    alert('Spracherkennung wird in diesem Browser nicht unterstÃ¼tzt. Bitte Chrome verwenden.');
+    alert('Spracherkennung wird in diesem Browser nicht unterstützt. Bitte Chrome verwenden.');
     return;
   }
 
@@ -533,7 +533,7 @@ function toggleSpeech() {
       text += e.results[i][0].transcript;
     }
     speechText = text;
-    document.getElementById('speech-result').textContent = 'â€ž' + text + '"';
+    document.getElementById('speech-result').textContent = '„' + text + '"';
     document.getElementById('process-btn').disabled = false;
   };
 
@@ -624,7 +624,7 @@ function processPrivatkunde() {
 
   // Check if customer exists
   if (customerName && supabase) {
-    supabase.from('customers').select('*').eq('type', 'privatkunde').ilike('name', '%' + customerName + '%').limit(1)
+    db.from('customers').select('*').eq('type', 'privatkunde').ilike('name', '%' + customerName + '%').limit(1)
       .then(({ data }) => {
         if (data && data.length > 0) {
           selectedCustomer = { id: data[0].id, name: data[0].name };
@@ -665,7 +665,7 @@ function showConfirmScreen(duration) {
 
   // Add task dropdown for adding missed tasks
   const addHTML = `<select id="add-task-select" style="padding:8px;border:1px solid var(--gray-border);border-radius:6px;font-size:13px;flex:1">
-    <option value="">+ TÃ¤tigkeit hinzufÃ¼gen</option>
+    <option value="">+ Tätigkeit hinzufügen</option>
     ${customerTasks.filter(t => !confirmedTasks.find(ct => ct.id === t.id)).map(t =>
       `<option value="${t.id}">${t.name}</option>`).join('')}
   </select>`;
@@ -686,7 +686,7 @@ function renderConfirmedTasks() {
     <div class="confirm-item">
       <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
       <span style="font-size:14px;flex:1">${t.name}</span>
-      <button class="remove" onclick="removeConfirmedTask(${i})">Ã—</button>
+      <button class="remove" onclick="removeConfirmedTask(${i})">×</button>
     </div>
   `).join('');
 }
@@ -710,7 +710,7 @@ function manualEntry() {
 // SAVE ENTRY
 // ============================================
 async function saveEntry() {
-  if (!supabase) { alert('Nicht verbunden'); return; }
+  if (!db) { alert('Nicht verbunden'); return; }
 
   const date = document.getElementById('confirm-date').value;
   const duration = parseInt(document.getElementById('confirm-duration').value) || 0;
@@ -724,28 +724,28 @@ async function saveEntry() {
 
     let custId = selectedCustomer?.id;
     if (!custId || selectedCustomer?.isNew) {
-      const { data: newCust } = await supabase.from('customers')
+      const { data: newCust } = await db.from('customers')
         .insert({ name: custName, type: 'privatkunde' }).select().single();
       if (newCust) custId = newCust.id;
     }
 
-    await supabase.from('visits').insert({
+    await db.from('visits').insert({
       customer_id: custId, date, duration_minutes: duration, notes
     });
 
   } else {
     // Check for existing visit on same date for same customer
-    const { data: existing } = await supabase.from('visits')
+    const { data: existing } = await db.from('visits')
       .select('id').eq('customer_id', selectedCustomer.id).eq('date', date).limit(1);
 
     let visitId;
     if (existing && existing.length > 0) {
       visitId = existing[0].id;
-      await supabase.from('visits').update({ duration_minutes: duration }).eq('id', visitId);
+      await db.from('visits').update({ duration_minutes: duration }).eq('id', visitId);
       // Remove old task entries for this visit
-      await supabase.from('visit_tasks').delete().eq('visit_id', visitId);
+      await db.from('visit_tasks').delete().eq('visit_id', visitId);
     } else {
-      const { data: newVisit } = await supabase.from('visits')
+      const { data: newVisit } = await db.from('visits')
         .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration })
         .select().single();
       if (newVisit) visitId = newVisit.id;
@@ -753,7 +753,7 @@ async function saveEntry() {
 
     if (visitId && confirmedTasks.length > 0) {
       const taskRows = confirmedTasks.map(t => ({ visit_id: visitId, task_id: t.id }));
-      await supabase.from('visit_tasks').insert(taskRows);
+      await db.from('visit_tasks').insert(taskRows);
     }
   }
 
@@ -765,10 +765,10 @@ async function saveEntry() {
 // MONTH TABLE (Dauerkunde)
 // ============================================
 async function openMonthTable(customerId) {
-  if (!supabase) return;
+  if (!db) return;
   selectedCustomer = { id: customerId };
 
-  const { data: cust } = await supabase.from('customers').select('*').eq('id', customerId).single();
+  const { data: cust } = await db.from('customers').select('*').eq('id', customerId).single();
   if (cust) selectedCustomer.name = cust.name;
 
   currentMonth = new Date();
@@ -784,22 +784,22 @@ async function renderMonthTable() {
 
   document.getElementById('month-label').textContent = label;
   document.getElementById('month-table-title').textContent = selectedCustomer.name;
-  document.getElementById('print-title').textContent = `${selectedCustomer.name} â€” ${label}`;
-  document.getElementById('print-subtitle').textContent = 'Hausmeister Imiolek Â· Arbeitsstundenaufstellung';
+  document.getElementById('print-title').textContent = `${selectedCustomer.name} — ${label}`;
+  document.getElementById('print-subtitle').textContent = 'Hausmeister Imiolek · Arbeitsstundenaufstellung';
 
   // Load tasks
-  const { data: tasks } = await supabase.from('customer_tasks')
+  const { data: tasks } = await db.from('customer_tasks')
     .select('*').eq('customer_id', selectedCustomer.id).order('sort_order');
 
   // Load visits for this month
   const startDate = `${year}-${String(month+1).padStart(2,'0')}-01`;
   const endDate = `${year}-${String(month+1).padStart(2,'0')}-${daysInMonth}`;
-  const { data: visits } = await supabase.from('visits')
+  const { data: visits } = await db.from('visits')
     .select('*, visit_tasks(task_id)')
     .eq('customer_id', selectedCustomer.id)
     .gte('date', startDate).lte('date', endDate);
 
-  // Build lookup: day â†’ { tasks: Set, duration }
+  // Build lookup: day → { tasks: Set, duration }
   const dayData = {};
   (visits || []).forEach(v => {
     const day = parseInt(v.date.split('-')[2]);
@@ -810,11 +810,11 @@ async function renderMonthTable() {
   });
 
   if (!tasks || tasks.length === 0) {
-    document.getElementById('month-table-wrap').innerHTML = '<div class="empty">Keine TÃ¤tigkeiten fÃ¼r diesen Kunden hinterlegt</div>';
+    document.getElementById('month-table-wrap').innerHTML = '<div class="empty">Keine Tätigkeiten für diesen Kunden hinterlegt</div>';
     return;
   }
 
-  let html = '<table class="print-table"><thead><tr><th style="text-align:left;min-width:90px">TÃ¤tigkeit</th>';
+  let html = '<table class="print-table"><thead><tr><th style="text-align:left;min-width:90px">Tätigkeit</th>';
   for (let d = 1; d <= daysInMonth; d++) html += `<th>${d}</th>`;
   html += '<th>Ges.</th></tr></thead><tbody>';
 
@@ -824,7 +824,7 @@ async function renderMonthTable() {
     for (let d = 1; d <= daysInMonth; d++) {
       const done = dayData[d] && dayData[d].tasks.has(task.id);
       if (done) count++;
-      html += `<td>${done ? '<span class="check">âœ“</span>' : ''}</td>`;
+      html += `<td>${done ? '<span class="check">✓</span>' : ''}</td>`;
     }
     html += `<td style="font-weight:500">${count || ''}</td></tr>`;
   });
@@ -844,7 +844,7 @@ async function renderMonthTable() {
 
   const visitCount = Object.keys(dayData).length;
   document.getElementById('month-summary').innerHTML =
-    `<span>${visitCount} EinsÃ¤tze</span><strong>${totalMin} Min. gesamt</strong>`;
+    `<span>${visitCount} Einsätze</span><strong>${totalMin} Min. gesamt</strong>`;
 }
 
 function changeMonth(delta) {
@@ -856,7 +856,7 @@ function changeMonth(delta) {
 // PRIVATE ENTRIES LIST
 // ============================================
 async function loadPrivateEntries() {
-  if (!supabase) return;
+  if (!db) return;
   const year = privMonth.getFullYear();
   const month = privMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -866,7 +866,7 @@ async function loadPrivateEntries() {
   const startDate = `${year}-${String(month+1).padStart(2,'0')}-01`;
   const endDate = `${year}-${String(month+1).padStart(2,'0')}-${daysInMonth}`;
 
-  const { data } = await supabase.from('visits')
+  const { data } = await db.from('visits')
     .select('*, customers!inner(name, type)')
     .eq('customers.type', 'privatkunde')
     .gte('date', startDate).lte('date', endDate)
@@ -874,7 +874,7 @@ async function loadPrivateEntries() {
 
   const el = document.getElementById('priv-entries-list');
   if (!data || data.length === 0) {
-    el.innerHTML = '<div class="empty">Keine EintrÃ¤ge in diesem Monat</div>';
+    el.innerHTML = '<div class="empty">Keine Einträge in diesem Monat</div>';
     document.getElementById('priv-summary').innerHTML = '';
     return;
   }
@@ -894,7 +894,7 @@ async function loadPrivateEntries() {
 
   const total = data.reduce((s, v) => s + v.duration_minutes, 0);
   document.getElementById('priv-summary').innerHTML =
-    `<span>${data.length} EinsÃ¤tze</span><strong>${total} Min. gesamt</strong>`;
+    `<span>${data.length} Einsätze</span><strong>${total} Min. gesamt</strong>`;
 }
 
 function changePrivMonth(delta) {
@@ -906,8 +906,8 @@ function changePrivMonth(delta) {
 // CUSTOMER MANAGEMENT
 // ============================================
 async function loadAllCustomers() {
-  if (!supabase) return;
-  const { data } = await supabase.from('customers').select('*').order('name');
+  if (!db) return;
+  const { data } = await db.from('customers').select('*').order('name');
   allCustomers = data || [];
   renderAllCustomers();
 }
@@ -927,7 +927,7 @@ function renderAllCustomers() {
       ? '<span class="customer-type-badge" style="background:var(--blue-bg);color:var(--blue)">Dauerkunde</span>'
       : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">Privatkunde</span>';
     const tableBtn = c.type === 'dauerkunde'
-      ? `<button style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer" onclick="openMonthTable('${c.id}')">ðŸ“‹ Tabelle</button>` : '';
+      ? `<button style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer" onclick="openMonthTable('${c.id}')">📋 Tabelle</button>` : '';
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:start">
         <div>
@@ -937,7 +937,7 @@ function renderAllCustomers() {
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:end">
           ${tableBtn}
-          <button style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer" onclick="deleteCustomer('${c.id}','${c.name.replace(/'/g,"\\'")}')">LÃ¶schen</button>
+          <button style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer" onclick="deleteCustomer('${c.id}','${c.name.replace(/'/g,"\\'")}')">Löschen</button>
         </div>
       </div>
     </div>`;
@@ -952,8 +952,8 @@ function filterCustomerList(type, btn) {
 }
 
 async function deleteCustomer(id, name) {
-  if (!confirm('Kunde "' + name + '" und alle EintrÃ¤ge wirklich lÃ¶schen?')) return;
-  await supabase.from('customers').delete().eq('id', id);
+  if (!confirm('Kunde "' + name + '" und alle Einträge wirklich löschen?')) return;
+  await db.from('customers').delete().eq('id', id);
   loadAllCustomers();
 }
 
@@ -1003,7 +1003,7 @@ async function saveNewCustomer() {
   const address = document.getElementById('new-cust-address').value.trim();
   if (!name) { alert('Bitte Kundenname eingeben'); return; }
 
-  const { data: cust } = await supabase.from('customers')
+  const { data: cust } = await db.from('customers')
     .insert({ name, type: newCustType, address }).select().single();
 
   if (cust && newCustType === 'dauerkunde') {
@@ -1015,7 +1015,7 @@ async function saveNewCustomer() {
       sort_order: i
     }));
     if (tasks.length > 0) {
-      await supabase.from('customer_tasks').insert(tasks);
+      await db.from('customer_tasks').insert(tasks);
     }
   }
 
@@ -1051,4 +1051,3 @@ init();
 </script>
 </body>
 </html>
-
