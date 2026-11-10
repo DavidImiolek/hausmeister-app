@@ -673,9 +673,39 @@ function processPrivatkunde() {
     if (/halbe\s*stunde/i.test(durationMatch[0])) duration = 30;
   }
 
-  // Remove duration from text
+  // Extract date (e.g. "9.11.2026", "09.11.", "9. November", "gestern", "vorgestern")
+  let spokenDate = '';
+  const dateFullMatch = words.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+  const dateShortMatch = words.match(/(\d{1,2})\.(\d{1,2})\./);
+  const dateWordMatch = words.match(/(\d{1,2})\.?\s*(januar|februar|märz|april|mai|juni|juli|august|september|oktober|november|dezember)(?:\s+(\d{4}))?/i);
+  if (dateFullMatch) {
+    const d = dateFullMatch[1].padStart(2,'0'), m = dateFullMatch[2].padStart(2,'0');
+    let y = dateFullMatch[3]; if (y.length === 2) y = '20' + y;
+    spokenDate = y + '-' + m + '-' + d;
+  } else if (dateWordMatch) {
+    const months = {januar:'01',februar:'02','märz':'03',april:'04',mai:'05',juni:'06',juli:'07',august:'08',september:'09',oktober:'10',november:'11',dezember:'12'};
+    const d = dateWordMatch[1].padStart(2,'0'), m = months[dateWordMatch[2].toLowerCase()];
+    const y = dateWordMatch[3] || new Date().getFullYear();
+    spokenDate = y + '-' + m + '-' + d;
+  } else if (dateShortMatch) {
+    const d = dateShortMatch[1].padStart(2,'0'), m = dateShortMatch[2].padStart(2,'0');
+    spokenDate = new Date().getFullYear() + '-' + m + '-' + d;
+  } else if (/gestern/i.test(words)) {
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    spokenDate = d.toISOString().split('T')[0];
+  } else if (/vorgestern/i.test(words)) {
+    const d = new Date(); d.setDate(d.getDate() - 2);
+    spokenDate = d.toISOString().split('T')[0];
+  }
+
+  // Remove duration and date from text
   let remaining = words.replace(/(\d+)\s*(minuten|min|stunden?|std)/gi, '')
-    .replace(/halbe\s*stunde/gi, '').trim();
+    .replace(/halbe\s*stunde/gi, '')
+    .replace(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/g, '')
+    .replace(/(\d{1,2})\.?\s*(januar|februar|märz|april|mai|juni|juli|august|september|oktober|november|dezember)(?:\s+\d{4})?/gi, '')
+    .replace(/(\d{1,2})\.(\d{1,2})\./g, '')
+    .replace(/gestern|vorgestern/gi, '')
+    .trim();
 
   let customerName = '';
   let taskText = remaining;
@@ -726,20 +756,20 @@ function processPrivatkunde() {
         } else {
           selectedCustomer = { id: null, name: customerName, isNew: true };
         }
-        showPrivatConfirm(taskText, duration);
+        showPrivatConfirm(taskText, duration, spokenDate);
       });
   } else {
     selectedCustomer = { id: null, name: customerName || '', isNew: !customerName };
-    showPrivatConfirm(taskText, duration);
+    showPrivatConfirm(taskText, duration, spokenDate);
   }
 }
 
-function showPrivatConfirm(taskText, duration) {
+function showPrivatConfirm(taskText, duration, spokenDate) {
   document.getElementById('confirm-tasks-section').classList.add('hidden');
   document.getElementById('confirm-notes-section').classList.remove('hidden');
   document.getElementById('confirm-notes').value = taskText;
   document.getElementById('confirm-duration').value = duration;
-  document.getElementById('confirm-date').value = todayStr();
+  document.getElementById('confirm-date').value = spokenDate || todayStr();
 
   const custHTML = selectedCustomer && selectedCustomer.name
     ? `<div class="input-group"><label>Kunde</label><input type="text" id="confirm-cust-name" value="${selectedCustomer.name}"></div>`
