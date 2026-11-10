@@ -629,16 +629,97 @@ function startRecognition() {
 }
 
 // ============================================
+// GPT PARSING VIA SUPABASE EDGE FUNCTION
+// ============================================
+async function callParseSpeech(text, type, tasks) {
+  const url = localStorage.getItem('sb_url') || 'https://hcefeifetaonhnxzdgak.supabase.co';
+  const key = localStorage.getItem('sb_key') || 'sb_publishable_YTmQmOUVfvxP1zPe7bagvw_79F85Qet';
+  const resp = await fetch(url + '/functions/v1/parse-speech', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + key,
+      'apikey': key
+    },
+    body: JSON.stringify({ text, type, tasks })
+  });
+  if (!resp.ok) throw new Error('Edge Function error: ' + resp.status);
+  return await resp.json();
+}
+
+// ============================================
 // SPEECH PROCESSING / FUZZY MATCHING
 // ============================================
-function processSpeech() {
+async function processSpeech() {
   if (!speechText.trim()) return;
 
-  if (currentEntryType === 'dauerkunde') {
-    processDauerkunde();
-  } else {
-    processPrivatkunde();
+  // Show loading indicator
+  const btn = document.getElementById('process-btn');
+  const origText = btn.textContent;
+  btn.textContent = '⏳ Wird verarbeitet...';
+  btn.disabled = true;
+
+  try {
+    if (currentEntryType === 'dauerkunde') {
+      await processDauerkundeGPT();
+    } else {
+      await processPrivatkundeGPT();
+    }
+  } catch(e) {
+    console.warn('[HS] GPT parsing failed, falling back to local:', e.message);
+    if (currentEntryType === 'dauerkunde') {
+      processDauerkunde();
+    } else {
+      processPrivatkunde();
+    }
+  } finally {
+    btn.textContent = origText;
+    btn.disabled = false;
   }
+}
+
+async function processDauerkundeGPT() {
+  const taskNames = customerTasks.map(t => t.name);
+  const result = await callParseSpeech(speechText, 'dauerkunde', taskNames);
+  console.log('[HS] GPT Dauerkunde result:', result);
+
+  confirmedTasks = [];
+  if (result.matched_tasks && result.matched_tasks.length > 0) {
+    result.matched_tasks.forEach(name => {
+      const fuse = new Fuse(customerTasks, { keys: ['name'], threshold: 0.4 });
+      const match = fuse.search(name);
+      if (match.length > 0 && !confirmedTasks.find(t => t.id === match[0].item.id)) {
+        confirmedTasks.push(match[0].item);
+      }
+    });
+  }
+
+  if (confirmedTasks.length === 0) {
+    throw new Error('No tasks matched via GPT, falling back');
+  }
+  showConfirmScreen(result.duration_minutes || 0);
+}
+
+async function processPrivatkundeGPT() {
+  const result = await callParseSpeech(speechText, 'privatkunde', []);
+  console.log('[HS] GPT Privatkunde result:', result);
+
+  const customerName = result.customer_name || '';
+  const taskText = result.task_description || speechText;
+  const duration = result.duration_minutes || 0;
+  const spokenDate = result.date || '';
+
+  if (customerName && db) {
+    const { data } = await db.from('customers').select('*').eq('type', 'privatkunde').ilike('name', '%' + customerName + '%').limit(1);
+    if (data && data.length > 0) {
+      selectedCustomer = { id: data[0].id, name: data[0].name };
+    } else {
+      selectedCustomer = { id: null, name: customerName, isNew: true };
+    }
+  } else {
+    selectedCustomer = { id: null, name: customerName, isNew: !customerName };
+  }
+  showPrivatConfirm(taskText, duration, spokenDate);
 }
 
 function processDauerkunde() {
