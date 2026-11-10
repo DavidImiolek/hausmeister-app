@@ -514,23 +514,9 @@ function openSpeechScreen() {
   document.getElementById('process-btn').disabled = true;
   speechText = '';
 
-  // Android: Tastatur-Diktat-Modus, sonst Web Speech API
-  const isAndroid = /android/i.test(navigator.userAgent);
-  document.getElementById('speech-mic-mode').style.display = isAndroid ? 'none' : '';
-  document.getElementById('speech-keyboard-mode').style.display = isAndroid ? '' : 'none';
-  if (isAndroid) {
-    document.getElementById('speech-keyboard-input').value = '';
-    document.getElementById('speech-result').textContent = '';
-    // Polling als Fallback: Android-Diktat feuert oft keine Events
-    clearInterval(window._keyboardPoll);
-    window._keyboardPoll = setInterval(() => {
-      if (document.getElementById('s-speech')?.classList.contains('active')) {
-        onKeyboardInput();
-      } else {
-        clearInterval(window._keyboardPoll);
-      }
-    }, 300);
-  }
+  // Alle Geräte: Web Speech API Mikrofon-Button anzeigen
+  document.getElementById('speech-mic-mode').style.display = '';
+  document.getElementById('speech-keyboard-mode').style.display = 'none';
   showScreen('s-speech');
 }
 
