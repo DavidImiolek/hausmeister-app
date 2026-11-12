@@ -229,6 +229,11 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
       <textarea id="confirm-details" rows="2" placeholder="Weitere Details zum Eintrag..." style="width:100%;padding:10px 12px;border:1px solid var(--gray-border);border-radius:8px;font-size:14px;resize:vertical"></textarea>
     </div>
 
+    <div class="input-group">
+      <label>Hilfe durch (optional)</label>
+      <input type="text" id="confirm-helper" placeholder="Name des Helfers..." style="width:100%;padding:10px 12px;border:1px solid var(--gray-border);border-radius:8px;font-size:14px">
+    </div>
+
     <div class="flex-row" style="margin-top:20px">
       <button class="btn btn-outline" onclick="showScreen('s-speech')">Zurück</button>
       <button class="btn btn-primary" onclick="saveEntry()">Speichern</button>
@@ -437,13 +442,14 @@ async function loadRecentEntries() {
       ? '<span class="customer-type-badge" style="background:var(--blue-bg);color:var(--blue)">DK</span>'
       : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">PK</span>';
     const tapAction = v.customers.type === 'dauerkunde' ? `openMonthTable('${v.customer_id}')` : '';
-    const detailsHtml = v.details ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">📝 ${v.details}</div>` : '';
+    const extraInfo = [v.details ? '📝 ' + v.details : '', v.helper ? '🤝 Hilfe durch: ' + v.helper : ''].filter(Boolean).join('<br>');
+    const detailsHtml = extraInfo ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">${extraInfo}</div>` : '';
     return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
       <div class="swipe-inner">
         <div class="list-item card-action" onclick="toggleDetails('${v.id}'); ${tapAction}">
           <div><div class="name">${badge} ${v.customers.name}</div>
-          <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.${v.details ? ' 📝' : ''}</div></div>
+          <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.${(v.details || v.helper) ? ' 📝' : ''}</div></div>
           <div class="meta">${formatDate(v.date)}</div>
         </div>
         ${detailsHtml}
@@ -713,6 +719,7 @@ async function processDauerkundeGPT() {
     throw new Error('No tasks matched via GPT, falling back');
   }
   showConfirmScreen(result.duration_minutes || 0);
+  if (result.helper) document.getElementById('confirm-helper').value = result.helper;
 }
 
 async function processPrivatkundeGPT() {
@@ -735,6 +742,7 @@ async function processPrivatkundeGPT() {
     selectedCustomer = { id: null, name: customerName, isNew: !customerName };
   }
   showPrivatConfirm(taskText, duration, spokenDate);
+  if (result.helper) document.getElementById('confirm-helper').value = result.helper;
 }
 
 function processDauerkunde() {
@@ -998,8 +1006,9 @@ async function saveEntry() {
     }
 
     const details = document.getElementById('confirm-details').value.trim();
+    const helper = document.getElementById('confirm-helper').value.trim();
     await db.from('visits').insert({
-      customer_id: custId, date, duration_minutes: duration, notes, details: details || null
+      customer_id: custId, date, duration_minutes: duration, notes, details: details || null, helper: helper || null
     });
 
   } else {
@@ -1011,13 +1020,15 @@ async function saveEntry() {
     if (existing && existing.length > 0) {
       visitId = existing[0].id;
       const dkDetailsUpd = document.getElementById('confirm-details').value.trim();
-      await db.from('visits').update({ duration_minutes: duration, details: dkDetailsUpd || null }).eq('id', visitId);
+      const dkHelperUpd = document.getElementById('confirm-helper').value.trim();
+      await db.from('visits').update({ duration_minutes: duration, details: dkDetailsUpd || null, helper: dkHelperUpd || null }).eq('id', visitId);
       // Remove old task entries for this visit
       await db.from('visit_tasks').delete().eq('visit_id', visitId);
     } else {
       const dkDetails = document.getElementById('confirm-details').value.trim();
+      const dkHelper = document.getElementById('confirm-helper').value.trim();
       const { data: newVisit } = await db.from('visits')
-        .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration, details: dkDetails || null })
+        .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration, details: dkDetails || null, helper: dkHelper || null })
         .select().single();
       if (newVisit) visitId = newVisit.id;
     }
@@ -1029,6 +1040,7 @@ async function saveEntry() {
   }
 
   document.getElementById('confirm-details').value = '';
+  document.getElementById('confirm-helper').value = '';
   showScreen('s-home');
   loadRecentEntries();
 }
@@ -1161,7 +1173,8 @@ async function loadPrivateEntries() {
   }
 
   el.innerHTML = data.map(v => {
-    const detHtml = v.details ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">📝 ${v.details}</div>` : '';
+    const privExtraInfo = [v.details ? '📝 ' + v.details : '', v.helper ? '🤝 Hilfe durch: ' + v.helper : ''].filter(Boolean).join('<br>');
+    const detHtml = privExtraInfo ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">${privExtraInfo}</div>` : '';
     return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
       <div class="swipe-inner">
