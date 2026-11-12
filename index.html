@@ -139,7 +139,7 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
       <span style="font-size:13px;color:var(--text-sec);font-weight:500">Letzte Einträge</span>
       <button style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer" onclick="showScreen('s-history')">Alle anzeigen</button>
     </div>
-    <div id="recent-entries"></div>
+    <div id="recent-entries" style="max-height:45vh;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
   </div>
   <button class="fab no-print" onclick="showScreen('s-customers')">☰</button>
 </div>
