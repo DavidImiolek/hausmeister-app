@@ -224,6 +224,11 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
       <span style="font-size:14px">Minuten</span>
     </div>
 
+    <div class="input-group">
+      <label>Details (optional)</label>
+      <textarea id="confirm-details" rows="2" placeholder="Weitere Details zum Eintrag..." style="width:100%;padding:10px 12px;border:1px solid var(--gray-border);border-radius:8px;font-size:14px;resize:vertical"></textarea>
+    </div>
+
     <div class="flex-row" style="margin-top:20px">
       <button class="btn btn-outline" onclick="showScreen('s-speech')">Zurück</button>
       <button class="btn btn-primary" onclick="saveEntry()">Speichern</button>
@@ -432,14 +437,16 @@ async function loadRecentEntries() {
       ? '<span class="customer-type-badge" style="background:var(--blue-bg);color:var(--blue)">DK</span>'
       : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">PK</span>';
     const tapAction = v.customers.type === 'dauerkunde' ? `openMonthTable('${v.customer_id}')` : '';
+    const detailsHtml = v.details ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">📝 ${v.details}</div>` : '';
     return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
       <div class="swipe-inner">
-        <div class="list-item card-action" onclick="${tapAction}">
+        <div class="list-item card-action" onclick="toggleDetails('${v.id}'); ${tapAction}">
           <div><div class="name">${badge} ${v.customers.name}</div>
-          <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.</div></div>
+          <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.${v.details ? ' 📝' : ''}</div></div>
           <div class="meta">${formatDate(v.date)}</div>
         </div>
+        ${detailsHtml}
       </div>
     </div>`;
   }).join('');
@@ -990,8 +997,9 @@ async function saveEntry() {
       if (newCust) custId = newCust.id;
     }
 
+    const details = document.getElementById('confirm-details').value.trim();
     await db.from('visits').insert({
-      customer_id: custId, date, duration_minutes: duration, notes
+      customer_id: custId, date, duration_minutes: duration, notes, details: details || null
     });
 
   } else {
@@ -1002,12 +1010,14 @@ async function saveEntry() {
     let visitId;
     if (existing && existing.length > 0) {
       visitId = existing[0].id;
-      await db.from('visits').update({ duration_minutes: duration }).eq('id', visitId);
+      const dkDetailsUpd = document.getElementById('confirm-details').value.trim();
+      await db.from('visits').update({ duration_minutes: duration, details: dkDetailsUpd || null }).eq('id', visitId);
       // Remove old task entries for this visit
       await db.from('visit_tasks').delete().eq('visit_id', visitId);
     } else {
+      const dkDetails = document.getElementById('confirm-details').value.trim();
       const { data: newVisit } = await db.from('visits')
-        .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration })
+        .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration, details: dkDetails || null })
         .select().single();
       if (newVisit) visitId = newVisit.id;
     }
@@ -1018,6 +1028,7 @@ async function saveEntry() {
     }
   }
 
+  document.getElementById('confirm-details').value = '';
   showScreen('s-home');
   loadRecentEntries();
 }
@@ -1090,6 +1101,15 @@ async function renderMonthTable() {
     html += `<td style="font-weight:500">${count || ''}</td></tr>`;
   });
 
+  // Details row
+  html += '<tr style="border-top:1px dashed var(--gray-border)"><td class="task-name" style="font-style:italic">Details</td>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const visit = (visits || []).find(v => parseInt(v.date.split('-')[2]) === d);
+    const det = visit && visit.details ?  : '';
+    html += ;
+  }
+  html += '<td></td></tr>';
+
   // Duration row
   html += '<tr style="border-top:2px solid var(--gray-border)"><td class="task-name" style="font-weight:600">Gesamt (Min.)</td>';
   let totalMin = 0;
@@ -1140,23 +1160,25 @@ async function loadPrivateEntries() {
     return;
   }
 
-  el.innerHTML = data.map(v => `
-    <div class="swipe-container" data-visit-id="${v.id}">
+  el.innerHTML = data.map(v => {
+    const detHtml = v.details ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">📝 ${v.details}</div>` : '';
+    return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
       <div class="swipe-inner">
-        <div class="list-item">
+        <div class="list-item" onclick="toggleDetails('${v.id}')">
           <div>
             <div class="name">${v.customers.name}</div>
-            <div class="meta">${v.notes || '-'}</div>
+            <div class="meta">${v.notes || '-'}${v.details ? ' 📝' : ''}</div>
           </div>
           <div style="text-align:right">
             <div style="font-weight:500;font-size:13px">${v.duration_minutes} Min.</div>
             <div class="meta">${formatDate(v.date)}</div>
           </div>
         </div>
+        ${detHtml}
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   initSwipe();
 
   const total = data.reduce((s, v) => s + v.duration_minutes, 0);
@@ -1165,6 +1187,12 @@ async function loadPrivateEntries() {
 }
 
 // ============================================
+// TOGGLE DETAILS
+function toggleDetails(id) {
+  const el = document.getElementById('det-' + id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
 // SWIPE TO DELETE
 // ============================================
 function initSwipe() {
