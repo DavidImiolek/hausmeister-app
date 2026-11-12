@@ -1117,8 +1117,8 @@ async function renderMonthTable() {
   html += '<tr style="border-top:1px dashed var(--gray-border)"><td class="task-name" style="font-style:italic">Details</td>';
   for (let d = 1; d <= daysInMonth; d++) {
     const visit = (visits || []).find(v => parseInt(v.date.split('-')[2]) === d);
-    const det = visit && visit.details ?  : '';
-    html += ;
+    const det = visit && visit.details ? `<span title="${visit.details}">📝</span>` : '';
+    html += `<td>${det}</td>`;
   }
   html += '<td></td></tr>';
 
