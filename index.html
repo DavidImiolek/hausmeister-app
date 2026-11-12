@@ -60,7 +60,11 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
 .confirm-item svg{width:18px;height:18px;fill:var(--green)}
 .duration-box{display:flex;align-items:center;gap:8px;padding:12px;background:var(--gray-light);border-radius:8px;margin:12px 0}
 .duration-box input{width:80px;padding:6px 8px;border:1px solid var(--gray-border);border-radius:6px;font-size:15px;font-weight:600;text-align:center}
-.list-item{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--white);border-radius:8px;border:1px solid var(--gray-border);margin-bottom:8px}
+.swipe-container{position:relative;overflow:hidden;border-radius:8px;margin-bottom:8px}
+.swipe-delete-bg{position:absolute;top:0;right:0;bottom:0;width:80px;background:#ff3b30;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:14px;border-radius:0 8px 8px 0}
+.swipe-inner{position:relative;z-index:1;transition:transform .25s ease;background:var(--white);border-radius:8px;border:1px solid var(--gray-border)}
+.swipe-inner.swiping{transition:none}
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:12px;background:transparent}
 .list-item .name{font-weight:500;font-size:14px}
 .list-item .meta{font-size:12px;color:var(--text-sec)}
 .month-nav{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 0}
@@ -427,12 +431,19 @@ async function loadRecentEntries() {
     const badge = v.customers.type === 'dauerkunde'
       ? '<span class="customer-type-badge" style="background:var(--blue-bg);color:var(--blue)">DK</span>'
       : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">PK</span>';
-    return `<div class="list-item card-action" onclick="${v.customers.type === 'dauerkunde' ? `openMonthTable('${v.customer_id}')` : ''}">
-      <div><div class="name">${badge} ${v.customers.name}</div>
-      <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.</div></div>
-      <div class="meta">${formatDate(v.date)}</div>
+    const tapAction = v.customers.type === 'dauerkunde' ? `openMonthTable('${v.customer_id}')` : '';
+    return `<div class="swipe-container" data-visit-id="${v.id}">
+      <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
+      <div class="swipe-inner">
+        <div class="list-item card-action" onclick="${tapAction}">
+          <div><div class="name">${badge} ${v.customers.name}</div>
+          <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.</div></div>
+          <div class="meta">${formatDate(v.date)}</div>
+        </div>
+      </div>
     </div>`;
   }).join('');
+  initSwipe();
 }
 
 // ============================================
@@ -1130,21 +1141,68 @@ async function loadPrivateEntries() {
   }
 
   el.innerHTML = data.map(v => `
-    <div class="list-item">
-      <div>
-        <div class="name">${v.customers.name}</div>
-        <div class="meta">${v.notes || '-'}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-weight:500;font-size:13px">${v.duration_minutes} Min.</div>
-        <div class="meta">${formatDate(v.date)}</div>
+    <div class="swipe-container" data-visit-id="${v.id}">
+      <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
+      <div class="swipe-inner">
+        <div class="list-item">
+          <div>
+            <div class="name">${v.customers.name}</div>
+            <div class="meta">${v.notes || '-'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:500;font-size:13px">${v.duration_minutes} Min.</div>
+            <div class="meta">${formatDate(v.date)}</div>
+          </div>
+        </div>
       </div>
     </div>
   `).join('');
+  initSwipe();
 
   const total = data.reduce((s, v) => s + v.duration_minutes, 0);
   document.getElementById('priv-summary').innerHTML =
     `<span>${data.length} Einsätze</span><strong>${total} Min. gesamt</strong>`;
+}
+
+// ============================================
+// SWIPE TO DELETE
+// ============================================
+function initSwipe() {
+  document.querySelectorAll(".swipe-container").forEach(container => {
+    const inner = container.querySelector(".swipe-inner");
+    let startX = 0, currentX = 0, isSwiping = false;
+    inner.addEventListener("touchstart", e => {
+      startX = e.touches[0].clientX;
+      currentX = 0;
+      isSwiping = true;
+      inner.classList.add("swiping");
+    }, {passive: true});
+    inner.addEventListener("touchmove", e => {
+      if (!isSwiping) return;
+      const diff = e.touches[0].clientX - startX;
+      currentX = Math.min(0, Math.max(-80, diff));
+      inner.style.transform = `translateX(${currentX}px)`;
+    }, {passive: true});
+    inner.addEventListener("touchend", () => {
+      isSwiping = false;
+      inner.classList.remove("swiping");
+      if (currentX < -40) {
+        inner.style.transform = "translateX(-80px)";
+      } else {
+        inner.style.transform = "translateX(0)";
+      }
+    });
+  });
+}
+
+async function deleteVisit(id) {
+  if (!confirm("Eintrag wirklich löschen?")) return;
+  if (!db) return;
+  const { error } = await db.from("visits").delete().eq("id", id);
+  if (error) { alert("Fehler: " + error.message); return; }
+  const el = document.querySelector(`.swipe-container[data-visit-id="${id}"]`);
+  if (el) { el.style.transition = "opacity .3s,max-height .3s"; el.style.opacity = "0"; el.style.maxHeight = "0"; el.style.overflow = "hidden"; setTimeout(() => el.remove(), 350); }
+  loadRecentEntries();
 }
 
 function changePrivMonth(delta) {
