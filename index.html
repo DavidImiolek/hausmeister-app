@@ -1135,11 +1135,12 @@ async function loadPrivateEntries() {
     return;
   }
 
-  el.innerHTML = data.map(v => `
-    <div class="swipe-container" data-visit-id="${v.id}">
+  el.innerHTML = data.map(v => {
+    const paidBorder = v.customer_paid ? '2px solid var(--green)' : '2px solid var(--red)';
+    return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-edit-bg" onclick="editVisit('${v.id}')">Bearbeiten</div>
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
-      <div class="swipe-inner">
+      <div class="swipe-inner" style="border:${paidBorder}">
         <div class="list-item">
           <div>
             <div class="name">${v.customers.name}</div>
@@ -1151,8 +1152,8 @@ async function loadPrivateEntries() {
           </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   initSwipe();
 
   const total = data.reduce((s, v) => s + v.duration_minutes, 0);
