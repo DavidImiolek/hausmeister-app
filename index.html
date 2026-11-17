@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#1a73e8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Hausmeister Imiolek</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7/dist/fuse.min.js"></script>
@@ -59,8 +61,8 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
 .duration-box{display:flex;align-items:center;gap:8px;padding:12px;background:var(--gray-light);border-radius:8px;margin:12px 0}
 .duration-box input{width:80px;padding:6px 8px;border:1px solid var(--gray-border);border-radius:6px;font-size:15px;font-weight:600;text-align:center}
 .swipe-container{position:relative;overflow:hidden;border-radius:8px;margin-bottom:8px}
-.swipe-edit-bg{position:absolute;top:0;left:0;bottom:0;width:80px;background:#007aff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:14px;border-radius:8px 0 0 8px}
 .swipe-delete-bg{position:absolute;top:0;right:0;bottom:0;width:80px;background:#ff3b30;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:14px;border-radius:0 8px 8px 0}
+.swipe-edit-bg{position:absolute;top:0;left:0;bottom:0;width:80px;background:#007aff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:14px;border-radius:8px 0 0 8px}
 .swipe-inner{position:relative;z-index:1;transition:transform .25s ease;background:var(--white);border-radius:8px;border:1px solid var(--gray-border)}
 .swipe-inner.swiping{transition:none}
 .list-item{display:flex;justify-content:space-between;align-items:center;padding:12px;background:transparent}
@@ -166,10 +168,22 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
     <p id="speech-subtitle" style="font-size:14px;color:var(--text-sec);margin-bottom:4px"></p>
     <p id="speech-date" style="font-size:15px;font-weight:600;margin-bottom:20px"></p>
 
-    <button class="mic-btn" id="mic-btn" onclick="toggleSpeech()">
-      <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-    </button>
-    <p style="font-size:13px;color:var(--text-sec)">Antippen und sprechen</p>
+    <!-- Web Speech API Mikrofon (iOS/Desktop) -->
+    <div id="speech-mic-mode">
+      <button class="mic-btn" id="mic-btn" onclick="toggleSpeech()">
+        <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+      </button>
+      <p style="font-size:13px;color:var(--text-sec)">Antippen und sprechen</p>
+    </div>
+
+    <!-- Tastatur-Diktat (Android) -->
+    <div id="speech-keyboard-mode" style="display:none">
+      <div style="background:var(--blue-bg);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;text-align:left">
+        <p style="font-size:13px;color:var(--blue);font-weight:600;margin-bottom:4px">🎤 Tipp: Tastatur-Mikrofon nutzen</p>
+        <p style="font-size:12px;color:var(--text-sec)">Tippe ins Textfeld und nutze das Mikrofon-Symbol auf deiner Tastatur zum Diktieren.</p>
+      </div>
+      <textarea id="speech-keyboard-input" rows="3" placeholder="Hier tippen oder per Tastatur-Mikrofon diktieren..." style="width:100%;padding:12px;border:1px solid var(--gray-border);border-radius:8px;font-size:15px" oninput="onKeyboardInput()" onchange="onKeyboardInput()" onkeyup="onKeyboardInput()"></textarea>
+    </div>
 
     <div class="speech-result" id="speech-result">Noch nichts erkannt...</div>
 
@@ -212,22 +226,13 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
     </div>
 
     <div class="input-group">
-      <label>Details / Anmerkungen</label>
-      <textarea id="confirm-details" rows="2" placeholder="z.B. Zusatzinfos zum Einsatz"></textarea>
+      <label>Details (optional)</label>
+      <textarea id="confirm-details" rows="2" placeholder="Weitere Details zum Eintrag..." style="width:100%;padding:10px 12px;border:1px solid var(--gray-border);border-radius:8px;font-size:14px;resize:vertical"></textarea>
     </div>
 
     <div class="input-group">
-      <label>Hilfe durch</label>
-      <input type="text" id="confirm-helper" placeholder="Name des Helfers (optional)">
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
-      <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer">
-        <input type="checkbox" id="confirm-helper-paid" style="width:22px;height:22px;accent-color:var(--blue)"> Helfer bezahlt
-      </label>
-      <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer">
-        <input type="checkbox" id="confirm-customer-paid" style="width:22px;height:22px;accent-color:var(--green)"> Kunde bezahlt
-      </label>
+      <label>Hilfe durch (optional)</label>
+      <input type="text" id="confirm-helper" placeholder="Name des Helfers..." style="width:100%;padding:10px 12px;border:1px solid var(--gray-border);border-radius:8px;font-size:14px">
     </div>
 
     <div class="flex-row" style="margin-top:20px">
@@ -353,12 +358,12 @@ let currentEntryType = '';
 let selectedCustomer = null;
 let customerTasks = [];
 let confirmedTasks = [];
+let editingVisitId = null;
 let speechText = '';
 let currentMonth = new Date();
 let privMonth = new Date();
 let allCustomers = [];
 let customerFilter = 'all';
-let editingVisitId = null;
 let newCustType = 'dauerkunde';
 
 const DEFAULT_TASKS = [
@@ -441,11 +446,10 @@ async function loadRecentEntries() {
     const tapAction = v.customers.type === 'dauerkunde' ? `openMonthTable('${v.customer_id}')` : '';
     const extraInfo = [v.details ? '📝 ' + v.details : '', v.helper ? '🤝 Hilfe durch: ' + v.helper : ''].filter(Boolean).join('<br>');
     const detailsHtml = extraInfo ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">${extraInfo}</div>` : '';
-    const paidBorder = v.customer_paid ? '2px solid var(--green)' : '2px solid var(--red)';
     return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-edit-bg" onclick="editVisit('${v.id}')">Bearbeiten</div>
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
-      <div class="swipe-inner" style="border:${paidBorder}">
+      <div class="swipe-inner">
         <div class="list-item card-action" onclick="toggleDetails('${v.id}'); ${tapAction}">
           <div><div class="name">${badge} ${v.customers.name}</div>
           <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.${(v.details || v.helper) ? ' 📝' : ''}</div></div>
@@ -538,7 +542,18 @@ function openSpeechScreen() {
   document.getElementById('speech-result').textContent = 'Noch nichts erkannt...';
   document.getElementById('process-btn').disabled = true;
   speechText = '';
+
+  // Alle Geräte: Web Speech API Mikrofon-Button anzeigen
+  document.getElementById('speech-mic-mode').style.display = '';
+  document.getElementById('speech-keyboard-mode').style.display = 'none';
   showScreen('s-speech');
+}
+
+function onKeyboardInput() {
+  const val = document.getElementById('speech-keyboard-input').value.trim();
+  speechText = val;
+  document.getElementById('speech-result').textContent = val ? '„' + val + '"' : '';
+  document.getElementById('process-btn').disabled = !val;
 }
 
 let recognition = null;
@@ -570,24 +585,50 @@ function startRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SR();
   recognition.lang = 'de-DE';
-  recognition.continuous = true;
-  recognition.interimResults = true;
+
+  // Android: continuous mode dupliziert Wörter → abschalten
+  const isAndroid = /android/i.test(navigator.userAgent);
+  recognition.continuous = !isAndroid;
+  recognition.interimResults = !isAndroid;
+
+  let lastFinalIndex = 0; // Track welche Results schon verarbeitet
 
   btn.classList.add('recording');
 
   recognition.onresult = (e) => {
-    let sessionText = '';
-    for (let i = 0; i < e.results.length; i++) {
-      sessionText += e.results[i][0].transcript;
+    if (isAndroid) {
+      // Android: nur das finale Ergebnis nehmen (kein continuous/interim)
+      const transcript = e.results[e.results.length - 1][0].transcript;
+      if (e.results[e.results.length - 1].isFinal) {
+        collectedText = (collectedText + ' ' + transcript).trim();
+      }
+      speechText = collectedText || transcript;
+    } else {
+      // iOS/Desktop: finale Results sammeln, interim nur zur Anzeige
+      let newFinal = '';
+      let interimText = '';
+      for (let i = 0; i < e.results.length; i++) {
+        const transcript = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          if (i >= lastFinalIndex) {
+            newFinal += ' ' + transcript;
+            lastFinalIndex = i + 1;
+          }
+        } else {
+          interimText += ' ' + transcript;
+        }
+      }
+      if (newFinal.trim()) {
+        collectedText = (collectedText + ' ' + newFinal).trim();
+      }
+      speechText = (collectedText + ' ' + interimText).trim();
     }
-    speechText = (collectedText + ' ' + sessionText).trim();
     document.getElementById('speech-result').textContent = '„' + speechText + '"';
     document.getElementById('process-btn').disabled = false;
   };
 
   recognition.onerror = (e) => {
     if (e.error === 'no-speech' && keepListening) {
-      // Stille — einfach neu starten
       recognition = null;
       startRecognition();
       return;
@@ -599,14 +640,7 @@ function startRecognition() {
   };
 
   recognition.onend = () => {
-    // Text dieser Session sichern bevor Neustart
-    let sessionText = '';
-    const el = document.getElementById('speech-result').textContent;
-    speechText = el.replace(/^„|"$/g, '').trim();
-    collectedText = speechText;
-
     if (keepListening) {
-      // Automatisch neu starten — Text bleibt erhalten
       recognition = null;
       startRecognition();
     } else {
@@ -619,16 +653,99 @@ function startRecognition() {
 }
 
 // ============================================
+// GPT PARSING VIA SUPABASE EDGE FUNCTION
+// ============================================
+async function callParseSpeech(text, type, tasks) {
+  const url = localStorage.getItem('sb_url') || 'https://hcefeifetaonhnxzdgak.supabase.co';
+  const key = localStorage.getItem('sb_key') || 'sb_publishable_YTmQmOUVfvxP1zPe7bagvw_79F85Qet';
+  const resp = await fetch(url + '/functions/v1/parse-speech', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + key,
+      'apikey': key
+    },
+    body: JSON.stringify({ text, type, tasks })
+  });
+  if (!resp.ok) throw new Error('Edge Function error: ' + resp.status);
+  return await resp.json();
+}
+
+// ============================================
 // SPEECH PROCESSING / FUZZY MATCHING
 // ============================================
-function processSpeech() {
+async function processSpeech() {
   if (!speechText.trim()) return;
 
-  if (currentEntryType === 'dauerkunde') {
-    processDauerkunde();
-  } else {
-    processPrivatkunde();
+  // Show loading indicator
+  const btn = document.getElementById('process-btn');
+  const origText = btn.textContent;
+  btn.textContent = '⏳ Wird verarbeitet...';
+  btn.disabled = true;
+
+  try {
+    if (currentEntryType === 'dauerkunde') {
+      await processDauerkundeGPT();
+    } else {
+      await processPrivatkundeGPT();
+    }
+  } catch(e) {
+    console.warn('[HS] GPT parsing failed, falling back to local:', e.message);
+    if (currentEntryType === 'dauerkunde') {
+      processDauerkunde();
+    } else {
+      processPrivatkunde();
+    }
+  } finally {
+    btn.textContent = origText;
+    btn.disabled = false;
   }
+}
+
+async function processDauerkundeGPT() {
+  const taskNames = customerTasks.map(t => t.name);
+  const result = await callParseSpeech(speechText, 'dauerkunde', taskNames);
+  console.log('[HS] GPT Dauerkunde result:', result);
+
+  confirmedTasks = [];
+  if (result.matched_tasks && result.matched_tasks.length > 0) {
+    result.matched_tasks.forEach(name => {
+      const fuse = new Fuse(customerTasks, { keys: ['name'], threshold: 0.4 });
+      const match = fuse.search(name);
+      if (match.length > 0 && !confirmedTasks.find(t => t.id === match[0].item.id)) {
+        confirmedTasks.push(match[0].item);
+      }
+    });
+  }
+
+  if (confirmedTasks.length === 0) {
+    throw new Error('No tasks matched via GPT, falling back');
+  }
+  showConfirmScreen(result.duration_minutes || 0);
+  if (result.helper) document.getElementById('confirm-helper').value = result.helper;
+}
+
+async function processPrivatkundeGPT() {
+  const result = await callParseSpeech(speechText, 'privatkunde', []);
+  console.log('[HS] GPT Privatkunde result:', result);
+
+  const customerName = result.customer_name || '';
+  const taskText = result.task_description || speechText;
+  const duration = result.duration_minutes || 0;
+  const spokenDate = result.date || '';
+
+  if (customerName && db) {
+    const { data } = await db.from('customers').select('*').eq('type', 'privatkunde').ilike('name', '%' + customerName + '%').limit(1);
+    if (data && data.length > 0) {
+      selectedCustomer = { id: data[0].id, name: data[0].name };
+    } else {
+      selectedCustomer = { id: null, name: customerName, isNew: true };
+    }
+  } else {
+    selectedCustomer = { id: null, name: customerName, isNew: !customerName };
+  }
+  showPrivatConfirm(taskText, duration, spokenDate);
+  if (result.helper) document.getElementById('confirm-helper').value = result.helper;
 }
 
 function processDauerkunde() {
@@ -876,145 +993,119 @@ async function saveEntry() {
 
   const date = document.getElementById('confirm-date').value;
   const duration = parseInt(document.getElementById('confirm-duration').value) || 0;
+  const details = document.getElementById('confirm-details').value.trim();
+  const helper = document.getElementById('confirm-helper').value.trim();
 
-  if (currentEntryType === 'privatkunde') {
-    const nameInput = document.getElementById('confirm-cust-name');
-    const custName = nameInput ? nameInput.value.trim() : '';
-    const notes = document.getElementById('confirm-notes').value.trim();
-
-    if (!custName) { alert('Bitte Kundenname eingeben'); return; }
-
-    let custId = selectedCustomer?.id;
-    if (!custId || selectedCustomer?.isNew) {
-      const { data: newCust } = await db.from('customers')
-        .insert({ name: custName, type: 'privatkunde' }).select().single();
-      if (newCust) custId = newCust.id;
-    }
-
-    const details = document.getElementById('confirm-details')?.value.trim() || '';
-    const helper = document.getElementById('confirm-helper')?.value.trim() || '';
-    const helperPaid = document.getElementById('confirm-helper-paid')?.checked || false;
-    const customerPaid = document.getElementById('confirm-customer-paid')?.checked || false;
-
-    if (editingVisitId) {
-      await db.from('visits').update({ customer_id: custId, date, duration_minutes: duration, notes, details, helper, helper_paid: helperPaid, customer_paid: customerPaid }).eq('id', editingVisitId);
+  // === EDIT MODE ===
+  if (editingVisitId) {
+    if (currentEntryType === 'privatkunde') {
+      const nameInput = document.getElementById('confirm-cust-name');
+      const notes = document.getElementById('confirm-notes').value.trim();
+      await db.from('visits').update({
+        date, duration_minutes: duration, notes, details: details || null, helper: helper || null
+      }).eq('id', editingVisitId);
     } else {
-      await db.from('visits').insert({
-        customer_id: custId, date, duration_minutes: duration, notes, details, helper, helper_paid: helperPaid, customer_paid: customerPaid
-      });
+      await db.from('visits').update({
+        date, duration_minutes: duration, details: details || null, helper: helper || null
+      }).eq('id', editingVisitId);
+      // Replace tasks
+      await db.from('visit_tasks').delete().eq('visit_id', editingVisitId);
+      if (confirmedTasks.length > 0) {
+        const taskRows = confirmedTasks.map(t => ({ visit_id: editingVisitId, task_id: t.id }));
+        await db.from('visit_tasks').insert(taskRows);
+      }
     }
-
+    editingVisitId = null;
   } else {
-    const details = document.getElementById('confirm-details')?.value.trim() || '';
-    const helper = document.getElementById('confirm-helper')?.value.trim() || '';
-    const helperPaid = document.getElementById('confirm-helper-paid')?.checked || false;
-    const customerPaid = document.getElementById('confirm-customer-paid')?.checked || false;
+    // === NEW ENTRY MODE ===
+    if (currentEntryType === 'privatkunde') {
+      const nameInput = document.getElementById('confirm-cust-name');
+      const custName = nameInput ? nameInput.value.trim() : '';
+      const notes = document.getElementById('confirm-notes').value.trim();
 
-    let visitId;
-    if (editingVisitId) {
-      visitId = editingVisitId;
-      await db.from('visits').update({ duration_minutes: duration, date, details, helper, helper_paid: helperPaid, customer_paid: customerPaid }).eq('id', visitId);
-      await db.from('visit_tasks').delete().eq('visit_id', visitId);
+      if (!custName) { alert('Bitte Kundenname eingeben'); return; }
+
+      let custId = selectedCustomer?.id;
+      if (!custId || selectedCustomer?.isNew) {
+        const { data: newCust } = await db.from('customers')
+          .insert({ name: custName, type: 'privatkunde' }).select().single();
+        if (newCust) custId = newCust.id;
+      }
+
+      await db.from('visits').insert({
+        customer_id: custId, date, duration_minutes: duration, notes, details: details || null, helper: helper || null
+      });
+
     } else {
-      // Check for existing visit on same date for same customer
       const { data: existing } = await db.from('visits')
         .select('id').eq('customer_id', selectedCustomer.id).eq('date', date).limit(1);
 
+      let visitId;
       if (existing && existing.length > 0) {
         visitId = existing[0].id;
-        await db.from('visits').update({ duration_minutes: duration, details, helper, helper_paid: helperPaid, customer_paid: customerPaid }).eq('id', visitId);
+        await db.from('visits').update({ duration_minutes: duration, details: details || null, helper: helper || null }).eq('id', visitId);
         await db.from('visit_tasks').delete().eq('visit_id', visitId);
       } else {
         const { data: newVisit } = await db.from('visits')
-          .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration, details, helper, helper_paid: helperPaid, customer_paid: customerPaid })
+          .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration, details: details || null, helper: helper || null })
           .select().single();
         if (newVisit) visitId = newVisit.id;
       }
-    }
 
-    if (visitId && confirmedTasks.length > 0) {
-      const taskRows = confirmedTasks.map(t => ({ visit_id: visitId, task_id: t.id }));
-      await db.from('visit_tasks').insert(taskRows);
+      if (visitId && confirmedTasks.length > 0) {
+        const taskRows = confirmedTasks.map(t => ({ visit_id: visitId, task_id: t.id }));
+        await db.from('visit_tasks').insert(taskRows);
+      }
     }
   }
 
-  editingVisitId = null;
   document.getElementById('confirm-details').value = '';
   document.getElementById('confirm-helper').value = '';
-  document.getElementById('confirm-helper-paid').checked = false;
-  document.getElementById('confirm-customer-paid').checked = false;
   showScreen('s-home');
   loadRecentEntries();
 }
 
-// ============================================
-// SWIPE TO DELETE / EDIT
-// ============================================
-function initSwipe() {
-  document.querySelectorAll(".swipe-container").forEach(container => {
-    const inner = container.querySelector(".swipe-inner");
-    let startX = 0, currentX = 0, isSwiping = false;
-    inner.addEventListener("touchstart", e => {
-      startX = e.touches[0].clientX; currentX = 0; isSwiping = true;
-      inner.classList.add("swiping");
-    }, {passive: true});
-    inner.addEventListener("touchmove", e => {
-      if (!isSwiping) return;
-      const diff = e.touches[0].clientX - startX;
-      currentX = Math.max(-80, Math.min(80, diff));
-      inner.style.transform = `translateX(${currentX}px)`;
-    }, {passive: true});
-    inner.addEventListener("touchend", () => {
-      isSwiping = false; inner.classList.remove("swiping");
-      if (currentX < -40) { inner.style.transform = "translateX(-80px)"; }
-      else if (currentX > 40) { inner.style.transform = "translateX(80px)"; }
-      else { inner.style.transform = "translateX(0)"; }
-    });
-  });
-}
-
-async function deleteVisit(id) {
-  if (!confirm("Eintrag wirklich löschen?")) return;
-  if (!db) return;
-  const { error } = await db.from("visits").delete().eq("id", id);
-  if (error) { alert("Fehler: " + error.message); return; }
-  const el = document.querySelector(`.swipe-container[data-visit-id="${id}"]`);
-  if (el) { el.style.transition = "opacity .3s,max-height .3s"; el.style.opacity = "0"; el.style.maxHeight = "0"; el.style.overflow = "hidden"; setTimeout(() => el.remove(), 350); }
-  loadRecentEntries();
-}
-
-function toggleDetails(id) {
-  const el = document.getElementById('det-' + id);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-
 async function editVisit(id) {
   if (!db) return;
+  // Close any open swipe
   document.querySelectorAll('.swipe-inner').forEach(el => el.style.transform = 'translateX(0)');
-  const { data: visit } = await db.from('visits').select('*, customers(*)').eq('id', id).single();
+
+  // Load visit with customer info
+  const { data: visit } = await db.from('visits')
+    .select('*, customers(*)').eq('id', id).single();
   if (!visit) { alert('Eintrag nicht gefunden'); return; }
+
   editingVisitId = id;
   selectedCustomer = visit.customers;
+
   if (visit.customers.type === 'dauerkunde') {
     currentEntryType = 'dauerkunde';
-    const { data: tasks } = await db.from('customer_tasks').select('*').eq('customer_id', visit.customer_id).order('name');
+    // Load customer tasks
+    const { data: tasks } = await db.from('customer_tasks')
+      .select('*').eq('customer_id', visit.customer_id).order('name');
     customerTasks = tasks || [];
-    const { data: visitTasks } = await db.from('visit_tasks').select('task_id').eq('visit_id', id);
+
+    // Load which tasks were checked for this visit
+    const { data: visitTasks } = await db.from('visit_tasks')
+      .select('task_id').eq('visit_id', id);
     const checkedIds = (visitTasks || []).map(vt => vt.task_id);
     confirmedTasks = customerTasks.filter(t => checkedIds.includes(t.id));
+
     showConfirmScreen(visit.duration_minutes || 0);
+    // Override date to the visit's actual date
     document.getElementById('confirm-date').value = visit.date;
   } else {
     currentEntryType = 'privatkunde';
     confirmedTasks = [];
     showPrivatConfirm(visit.notes || '', visit.duration_minutes || 0, visit.date);
+    // Set customer name
     const nameInput = document.getElementById('confirm-cust-name');
     if (nameInput) nameInput.value = visit.customers.name;
   }
+
+  // Fill in details and helper
   if (visit.details) document.getElementById('confirm-details').value = visit.details;
   if (visit.helper) document.getElementById('confirm-helper').value = visit.helper;
-  document.getElementById('confirm-helper-paid').checked = !!visit.helper_paid;
-  document.getElementById('confirm-customer-paid').checked = !!visit.customer_paid;
 }
 
 // ============================================
@@ -1085,6 +1176,15 @@ async function renderMonthTable() {
     html += `<td style="font-weight:500">${count || ''}</td></tr>`;
   });
 
+  // Details row
+  html += '<tr style="border-top:1px dashed var(--gray-border)"><td class="task-name" style="font-style:italic">Details</td>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const visit = (visits || []).find(v => parseInt(v.date.split('-')[2]) === d);
+    const det = visit && visit.details ? `<span title="${visit.details}">📝</span>` : '';
+    html += `<td>${det}</td>`;
+  }
+  html += '<td></td></tr>';
+
   // Duration row
   html += '<tr style="border-top:2px solid var(--gray-border)"><td class="task-name" style="font-weight:600">Gesamt (Min.)</td>';
   let totalMin = 0;
@@ -1136,21 +1236,23 @@ async function loadPrivateEntries() {
   }
 
   el.innerHTML = data.map(v => {
-    const paidBorder = v.customer_paid ? '2px solid var(--green)' : '2px solid var(--red)';
+    const privExtraInfo = [v.details ? '📝 ' + v.details : '', v.helper ? '🤝 Hilfe durch: ' + v.helper : ''].filter(Boolean).join('<br>');
+    const detHtml = privExtraInfo ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">${privExtraInfo}</div>` : '';
     return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-edit-bg" onclick="editVisit('${v.id}')">Bearbeiten</div>
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
-      <div class="swipe-inner" style="border:${paidBorder}">
-        <div class="list-item">
+      <div class="swipe-inner">
+        <div class="list-item" onclick="toggleDetails('${v.id}')">
           <div>
             <div class="name">${v.customers.name}</div>
-            <div class="meta">${v.notes || '-'}</div>
+            <div class="meta">${v.notes || '-'}${v.details ? ' 📝' : ''}</div>
           </div>
           <div style="text-align:right">
             <div style="font-weight:500;font-size:13px">${v.duration_minutes} Min.</div>
             <div class="meta">${formatDate(v.date)}</div>
           </div>
         </div>
+        ${detHtml}
       </div>
     </div>`;
   }).join('');
@@ -1159,6 +1261,55 @@ async function loadPrivateEntries() {
   const total = data.reduce((s, v) => s + v.duration_minutes, 0);
   document.getElementById('priv-summary').innerHTML =
     `<span>${data.length} Einsätze</span><strong>${total} Min. gesamt</strong>`;
+}
+
+// ============================================
+// TOGGLE DETAILS
+function toggleDetails(id) {
+  const el = document.getElementById('det-' + id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// SWIPE TO DELETE / EDIT
+// ============================================
+function initSwipe() {
+  document.querySelectorAll(".swipe-container").forEach(container => {
+    const inner = container.querySelector(".swipe-inner");
+    let startX = 0, currentX = 0, isSwiping = false;
+    inner.addEventListener("touchstart", e => {
+      startX = e.touches[0].clientX;
+      currentX = 0;
+      isSwiping = true;
+      inner.classList.add("swiping");
+    }, {passive: true});
+    inner.addEventListener("touchmove", e => {
+      if (!isSwiping) return;
+      const diff = e.touches[0].clientX - startX;
+      currentX = Math.max(-80, Math.min(80, diff));
+      inner.style.transform = `translateX(${currentX}px)`;
+    }, {passive: true});
+    inner.addEventListener("touchend", () => {
+      isSwiping = false;
+      inner.classList.remove("swiping");
+      if (currentX < -40) {
+        inner.style.transform = "translateX(-80px)";
+      } else if (currentX > 40) {
+        inner.style.transform = "translateX(80px)";
+      } else {
+        inner.style.transform = "translateX(0)";
+      }
+    });
+  });
+}
+
+async function deleteVisit(id) {
+  if (!confirm("Eintrag wirklich löschen?")) return;
+  if (!db) return;
+  const { error } = await db.from("visits").delete().eq("id", id);
+  if (error) { alert("Fehler: " + error.message); return; }
+  const el = document.querySelector(`.swipe-container[data-visit-id="${id}"]`);
+  if (el) { el.style.transition = "opacity .3s,max-height .3s"; el.style.opacity = "0"; el.style.maxHeight = "0"; el.style.overflow = "hidden"; setTimeout(() => el.remove(), 350); }
+  loadRecentEntries();
 }
 
 function changePrivMonth(delta) {
