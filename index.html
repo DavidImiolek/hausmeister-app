@@ -221,6 +221,15 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
       <input type="text" id="confirm-helper" placeholder="Name des Helfers (optional)">
     </div>
 
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer">
+        <input type="checkbox" id="confirm-helper-paid" style="width:22px;height:22px;accent-color:var(--blue)"> Helfer bezahlt
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer">
+        <input type="checkbox" id="confirm-customer-paid" style="width:22px;height:22px;accent-color:var(--green)"> Kunde bezahlt
+      </label>
+    </div>
+
     <div class="flex-row" style="margin-top:20px">
       <button class="btn btn-outline" onclick="showScreen('s-speech')">Zurück</button>
       <button class="btn btn-primary" onclick="saveEntry()">Speichern</button>
@@ -432,10 +441,11 @@ async function loadRecentEntries() {
     const tapAction = v.customers.type === 'dauerkunde' ? `openMonthTable('${v.customer_id}')` : '';
     const extraInfo = [v.details ? '📝 ' + v.details : '', v.helper ? '🤝 Hilfe durch: ' + v.helper : ''].filter(Boolean).join('<br>');
     const detailsHtml = extraInfo ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">${extraInfo}</div>` : '';
+    const paidBorder = v.customer_paid ? '2px solid var(--green)' : '2px solid var(--red)';
     return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-edit-bg" onclick="editVisit('${v.id}')">Bearbeiten</div>
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
-      <div class="swipe-inner">
+      <div class="swipe-inner" style="border:${paidBorder}">
         <div class="list-item card-action" onclick="toggleDetails('${v.id}'); ${tapAction}">
           <div><div class="name">${badge} ${v.customers.name}</div>
           <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.${(v.details || v.helper) ? ' 📝' : ''}</div></div>
@@ -883,23 +893,27 @@ async function saveEntry() {
 
     const details = document.getElementById('confirm-details')?.value.trim() || '';
     const helper = document.getElementById('confirm-helper')?.value.trim() || '';
+    const helperPaid = document.getElementById('confirm-helper-paid')?.checked || false;
+    const customerPaid = document.getElementById('confirm-customer-paid')?.checked || false;
 
     if (editingVisitId) {
-      await db.from('visits').update({ customer_id: custId, date, duration_minutes: duration, notes, details, helper }).eq('id', editingVisitId);
+      await db.from('visits').update({ customer_id: custId, date, duration_minutes: duration, notes, details, helper, helper_paid: helperPaid, customer_paid: customerPaid }).eq('id', editingVisitId);
     } else {
       await db.from('visits').insert({
-        customer_id: custId, date, duration_minutes: duration, notes, details, helper
+        customer_id: custId, date, duration_minutes: duration, notes, details, helper, helper_paid: helperPaid, customer_paid: customerPaid
       });
     }
 
   } else {
     const details = document.getElementById('confirm-details')?.value.trim() || '';
     const helper = document.getElementById('confirm-helper')?.value.trim() || '';
+    const helperPaid = document.getElementById('confirm-helper-paid')?.checked || false;
+    const customerPaid = document.getElementById('confirm-customer-paid')?.checked || false;
 
     let visitId;
     if (editingVisitId) {
       visitId = editingVisitId;
-      await db.from('visits').update({ duration_minutes: duration, date, details, helper }).eq('id', visitId);
+      await db.from('visits').update({ duration_minutes: duration, date, details, helper, helper_paid: helperPaid, customer_paid: customerPaid }).eq('id', visitId);
       await db.from('visit_tasks').delete().eq('visit_id', visitId);
     } else {
       // Check for existing visit on same date for same customer
@@ -908,11 +922,11 @@ async function saveEntry() {
 
       if (existing && existing.length > 0) {
         visitId = existing[0].id;
-        await db.from('visits').update({ duration_minutes: duration, details, helper }).eq('id', visitId);
+        await db.from('visits').update({ duration_minutes: duration, details, helper, helper_paid: helperPaid, customer_paid: customerPaid }).eq('id', visitId);
         await db.from('visit_tasks').delete().eq('visit_id', visitId);
       } else {
         const { data: newVisit } = await db.from('visits')
-          .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration, details, helper })
+          .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration, details, helper, helper_paid: helperPaid, customer_paid: customerPaid })
           .select().single();
         if (newVisit) visitId = newVisit.id;
       }
@@ -927,6 +941,8 @@ async function saveEntry() {
   editingVisitId = null;
   document.getElementById('confirm-details').value = '';
   document.getElementById('confirm-helper').value = '';
+  document.getElementById('confirm-helper-paid').checked = false;
+  document.getElementById('confirm-customer-paid').checked = false;
   showScreen('s-home');
   loadRecentEntries();
 }
@@ -997,6 +1013,8 @@ async function editVisit(id) {
   }
   if (visit.details) document.getElementById('confirm-details').value = visit.details;
   if (visit.helper) document.getElementById('confirm-helper').value = visit.helper;
+  document.getElementById('confirm-helper-paid').checked = !!visit.helper_paid;
+  document.getElementById('confirm-customer-paid').checked = !!visit.customer_paid;
 }
 
 // ============================================
