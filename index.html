@@ -211,6 +211,16 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
       <span style="font-size:14px">Minuten</span>
     </div>
 
+    <div class="input-group">
+      <label>Details / Anmerkungen</label>
+      <textarea id="confirm-details" rows="2" placeholder="z.B. Zusatzinfos zum Einsatz"></textarea>
+    </div>
+
+    <div class="input-group">
+      <label>Hilfe durch</label>
+      <input type="text" id="confirm-helper" placeholder="Name des Helfers (optional)">
+    </div>
+
     <div class="flex-row" style="margin-top:20px">
       <button class="btn btn-outline" onclick="showScreen('s-speech')">Zurück</button>
       <button class="btn btn-primary" onclick="saveEntry()">Speichern</button>
