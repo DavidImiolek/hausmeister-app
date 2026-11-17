@@ -234,6 +234,10 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
       <label>Hilfe durch (optional)</label>
       <input type="text" id="confirm-helper" placeholder="Name des Helfers..." style="width:100%;padding:10px 12px;border:1px solid var(--gray-border);border-radius:8px;font-size:14px">
     </div>
+    <div style="display:flex;gap:16px;margin-top:12px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="confirm-helper-paid"> Helfer bezahlt</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="confirm-customer-paid"> Kunde bezahlt</label>
+    </div>
 
     <div class="flex-row" style="margin-top:20px">
       <button class="btn btn-outline" onclick="showScreen('s-speech')">Zurück</button>
@@ -446,10 +450,11 @@ async function loadRecentEntries() {
     const tapAction = v.customers.type === 'dauerkunde' ? `openMonthTable('${v.customer_id}')` : '';
     const extraInfo = [v.details ? '📝 ' + v.details : '', v.helper ? '🤝 Hilfe durch: ' + v.helper : ''].filter(Boolean).join('<br>');
     const detailsHtml = extraInfo ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">${extraInfo}</div>` : '';
+    const paidBorder = v.customer_paid ? '2px solid var(--green)' : '2px solid var(--red)';
     return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-edit-bg" onclick="editVisit('${v.id}')">Bearbeiten</div>
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
-      <div class="swipe-inner">
+      <div class="swipe-inner" style="border:${paidBorder}">
         <div class="list-item card-action" onclick="toggleDetails('${v.id}'); ${tapAction}">
           <div><div class="name">${badge} ${v.customers.name}</div>
           <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.${(v.details || v.helper) ? ' 📝' : ''}</div></div>
@@ -1061,6 +1066,8 @@ async function saveEntry() {
 
   document.getElementById('confirm-details').value = '';
   document.getElementById('confirm-helper').value = '';
+  document.getElementById('confirm-helper-paid').checked = false;
+  document.getElementById('confirm-customer-paid').checked = false;
   showScreen('s-home');
   loadRecentEntries();
 }
@@ -1106,6 +1113,8 @@ async function editVisit(id) {
   // Fill in details and helper
   if (visit.details) document.getElementById('confirm-details').value = visit.details;
   if (visit.helper) document.getElementById('confirm-helper').value = visit.helper;
+  document.getElementById('confirm-helper-paid').checked = !!visit.helper_paid;
+  document.getElementById('confirm-customer-paid').checked = !!visit.customer_paid;
 }
 
 // ============================================
@@ -1238,10 +1247,11 @@ async function loadPrivateEntries() {
   el.innerHTML = data.map(v => {
     const privExtraInfo = [v.details ? '📝 ' + v.details : '', v.helper ? '🤝 Hilfe durch: ' + v.helper : ''].filter(Boolean).join('<br>');
     const detHtml = privExtraInfo ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">${privExtraInfo}</div>` : '';
+    const paidBorder = v.customer_paid ? '2px solid var(--green)' : '2px solid var(--red)';
     return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-edit-bg" onclick="editVisit('${v.id}')">Bearbeiten</div>
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
-      <div class="swipe-inner">
+      <div class="swipe-inner" style="border:${paidBorder}">
         <div class="list-item" onclick="toggleDetails('${v.id}')">
           <div>
             <div class="name">${v.customers.name}</div>
