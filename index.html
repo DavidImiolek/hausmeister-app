@@ -1007,11 +1007,11 @@ async function saveEntry() {
       const nameInput = document.getElementById('confirm-cust-name');
       const notes = document.getElementById('confirm-notes').value.trim();
       await db.from('visits').update({
-        date, duration_minutes: duration, notes, details: details || null, helper: helper || null
+        date, duration_minutes: duration, notes, details: details || null, helper: helper || null, helper_paid: document.getElementById('confirm-helper-paid').checked, customer_paid: document.getElementById('confirm-customer-paid').checked
       }).eq('id', editingVisitId);
     } else {
       await db.from('visits').update({
-        date, duration_minutes: duration, details: details || null, helper: helper || null
+        date, duration_minutes: duration, details: details || null, helper: helper || null, helper_paid: document.getElementById('confirm-helper-paid').checked, customer_paid: document.getElementById('confirm-customer-paid').checked
       }).eq('id', editingVisitId);
       // Replace tasks
       await db.from('visit_tasks').delete().eq('visit_id', editingVisitId);
@@ -1038,7 +1038,7 @@ async function saveEntry() {
       }
 
       await db.from('visits').insert({
-        customer_id: custId, date, duration_minutes: duration, notes, details: details || null, helper: helper || null
+        customer_id: custId, date, duration_minutes: duration, notes, details: details || null, helper: helper || null, helper_paid: document.getElementById('confirm-helper-paid').checked, customer_paid: document.getElementById('confirm-customer-paid').checked
       });
 
     } else {
@@ -1048,11 +1048,11 @@ async function saveEntry() {
       let visitId;
       if (existing && existing.length > 0) {
         visitId = existing[0].id;
-        await db.from('visits').update({ duration_minutes: duration, details: details || null, helper: helper || null }).eq('id', visitId);
+        await db.from('visits').update({ duration_minutes: duration, details: details || null, helper: helper || null, helper_paid: document.getElementById('confirm-helper-paid').checked, customer_paid: document.getElementById('confirm-customer-paid').checked }).eq('id', visitId);
         await db.from('visit_tasks').delete().eq('visit_id', visitId);
       } else {
         const { data: newVisit } = await db.from('visits')
-          .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration, details: details || null, helper: helper || null })
+          .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration, details: details || null, helper: helper || null, helper_paid: document.getElementById('confirm-helper-paid').checked, customer_paid: document.getElementById('confirm-customer-paid').checked })
           .select().single();
         if (newVisit) visitId = newVisit.id;
       }
