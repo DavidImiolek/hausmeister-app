@@ -239,6 +239,13 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
       <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="confirm-customer-paid"> Kunde bezahlt</label>
     </div>
 
+    <div style="margin-top:16px">
+      <label style="font-size:13px;color:var(--gray-text);margin-bottom:6px;display:block">📷 Fotos</label>
+      <div id="photo-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
+      <input type="file" id="photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotoSelect(event)">
+      <button type="button" class="btn btn-outline" onclick="document.getElementById('photo-input').click()" style="font-size:13px;padding:8px 16px">📷 Foto hinzufügen</button>
+    </div>
+
     <div class="flex-row" style="margin-top:20px">
       <button class="btn btn-outline" onclick="showScreen('s-speech')">Zurück</button>
       <button class="btn btn-primary" onclick="saveEntry()">Speichern</button>
@@ -508,7 +515,7 @@ async function loadRecentEntries() {
       : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">PK</span>';
     const tapAction = v.customers.type === 'dauerkunde' ? `openMonthTable('${v.customer_id}')` : '';
     const extraInfo = [v.details ? '📝 ' + v.details : '', v.helper ? '🤝 Hilfe durch: ' + v.helper : ''].filter(Boolean).join('<br>');
-    const detailsHtml = extraInfo ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">${extraInfo}</div>` : '';
+    const detailsHtml = `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">${extraInfo ? extraInfo + '<br>' : ''}<div id="photos-${v.id}" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div></div>`;
     const paidBorder = (v.customer_paid || v.customers?.type === 'dauerkunde') ? '2px solid var(--green)' : '2px solid var(--red)';
     return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-edit-bg" onclick="editVisit('${v.id}')">Bearbeiten</div>
@@ -1049,6 +1056,52 @@ function manualEntry() {
   }
 }
 
+
+// ============================================
+// PHOTO UPLOAD
+// ============================================
+let pendingPhotos = [];
+
+function handlePhotoSelect(event) {
+  const files = Array.from(event.target.files);
+  files.forEach(file => {
+    if (file.size > 10 * 1024 * 1024) { alert('Foto zu groß (max 10MB)'); return; }
+    pendingPhotos.push(file);
+    const reader = new FileReader();
+    reader.onload = e => {
+      const preview = document.getElementById('photo-preview');
+      const idx = pendingPhotos.length - 1;
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden';
+      wrapper.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover">'
+        + '<button onclick="removePhoto(' + idx + ', this.parentElement)" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>';
+      preview.appendChild(wrapper);
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = '';
+}
+
+function removePhoto(idx, el) {
+  pendingPhotos[idx] = null;
+  if (el) el.remove();
+}
+
+async function uploadPhotos(visitId) {
+  if (!visitId || !db) return;
+  const SUPABASE_URL = 'https://hcefeifetaonhnxzdgak.supabase.co';
+  for (const file of pendingPhotos) {
+    if (!file) continue;
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = visitId + '/' + Date.now() + '_' + Math.random().toString(36).slice(2,6) + '.' + ext;
+    const { error } = await db.storage.from('visit-photos').upload(path, file, { contentType: file.type });
+    if (error) { console.error('Upload error:', error); continue; }
+    const publicUrl = SUPABASE_URL + '/storage/v1/object/public/visit-photos/' + path;
+    await db.from('visit_photos').insert({ visit_id: visitId, photo_url: publicUrl });
+  }
+  pendingPhotos = [];
+}
+
 // ============================================
 // SAVE ENTRY
 // ============================================
@@ -1079,6 +1132,7 @@ async function saveEntry() {
         await db.from('visit_tasks').insert(taskRows);
       }
     }
+    if (pendingPhotos.some(p => p)) await uploadPhotos(editingVisitId);
     editingVisitId = null;
   } else {
     // === NEW ENTRY MODE ===
@@ -1096,9 +1150,10 @@ async function saveEntry() {
         if (newCust) custId = newCust.id;
       }
 
-      await db.from('visits').insert({
+      const { data: pkVisit } = await db.from('visits').insert({
         customer_id: custId, date, duration_minutes: duration, notes, details: details || null, helper: helper || null, helper_paid: document.getElementById('confirm-helper-paid').checked, customer_paid: document.getElementById('confirm-customer-paid').checked
-      });
+      }).select().single();
+      if (pkVisit && pendingPhotos.some(p => p)) await uploadPhotos(pkVisit.id);
 
     } else {
       const { data: existing } = await db.from('visits')
@@ -1120,6 +1175,7 @@ async function saveEntry() {
         const taskRows = confirmedTasks.map(t => ({ visit_id: visitId, task_id: t.id }));
         await db.from('visit_tasks').insert(taskRows);
       }
+      if (visitId && pendingPhotos.some(p => p)) await uploadPhotos(visitId);
     }
   }
 
@@ -1127,6 +1183,9 @@ async function saveEntry() {
   document.getElementById('confirm-helper').value = '';
   document.getElementById('confirm-helper-paid').checked = false;
   document.getElementById('confirm-customer-paid').checked = false;
+  document.getElementById('photo-preview').innerHTML = '';
+  document.getElementById('photo-input').value = '';
+  pendingPhotos = [];
   showScreen('s-home');
   loadRecentEntries();
 }
@@ -1174,6 +1233,13 @@ async function editVisit(id) {
   if (visit.helper) document.getElementById('confirm-helper').value = visit.helper;
   document.getElementById('confirm-helper-paid').checked = !!visit.helper_paid;
   document.getElementById('confirm-customer-paid').checked = !!visit.customer_paid;
+  pendingPhotos = [];
+  const pp = document.getElementById('photo-preview');
+  pp.innerHTML = '';
+  const { data: existingPhotos } = await db.from('visit_photos').select('photo_url').eq('visit_id', id);
+  if (existingPhotos && existingPhotos.length > 0) {
+    pp.innerHTML = existingPhotos.map(p => '<div style="position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden"><img src="' + p.photo_url + '" style="width:100%;height:100%;object-fit:cover"></div>').join('');
+  }
 }
 
 // ============================================
@@ -1313,7 +1379,7 @@ async function loadPrivateEntries() {
 
   el.innerHTML = data.map(v => {
     const privExtraInfo = [v.details ? '📝 ' + v.details : '', v.helper ? '🤝 Hilfe durch: ' + v.helper : ''].filter(Boolean).join('<br>');
-    const detHtml = privExtraInfo ? `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">${privExtraInfo}</div>` : '';
+    const detHtml = `<div class="entry-details" id="det-${v.id}" style="display:none;padding:4px 12px 10px;font-size:13px;color:var(--text-sec);border-top:1px solid var(--gray-border)">${privExtraInfo ? privExtraInfo + '<br>' : ''}<div id="photos-${v.id}" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div></div>`;
     const paidBorder = (v.customer_paid || v.customers?.type === 'dauerkunde') ? '2px solid var(--green)' : '2px solid var(--red)';
     return `<div class="swipe-container" data-visit-id="${v.id}">
       <div class="swipe-edit-bg" onclick="editVisit('${v.id}')">Bearbeiten</div>
@@ -1344,7 +1410,22 @@ async function loadPrivateEntries() {
 // TOGGLE DETAILS
 function toggleDetails(id) {
   const el = document.getElementById('det-' + id);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (!el) return;
+  const show = el.style.display === 'none';
+  el.style.display = show ? 'block' : 'none';
+  if (show) loadPhotosForVisit(id);
+}
+
+async function loadPhotosForVisit(visitId) {
+  if (!db) return;
+  const container = document.getElementById('photos-' + visitId);
+  if (!container || container.dataset.loaded) return;
+  container.dataset.loaded = '1';
+  const { data } = await db.from('visit_photos').select('photo_url').eq('visit_id', visitId);
+  if (!data || data.length === 0) { container.style.display = 'none'; return; }
+  container.innerHTML = data.map(p =>
+    '<img src="' + p.photo_url + '" onclick="window.open(this.src)" style="width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:pointer">'
+  ).join('');
 }
 
 // SWIPE TO DELETE / EDIT
