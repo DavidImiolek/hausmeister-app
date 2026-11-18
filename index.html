@@ -101,6 +101,24 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
   .print-header p{font-size:11px;color:#666}
 }
 .print-only{display:none}
+/* Bottom Nav */
+.bottom-nav{display:flex;border-top:1px solid var(--gray-border);background:var(--white);padding:6px 0 max(6px,env(safe-area-inset-bottom));position:sticky;bottom:0;z-index:10}
+.bottom-nav .nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;background:none;border:none;font-size:11px;color:var(--text-sec);cursor:pointer}
+.bottom-nav .nav-tab.active{color:var(--blue);font-weight:600}
+.bottom-nav .nav-tab svg{width:22px;height:22px;fill:currentColor}
+/* Calendar */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:0 8px}
+.cal-header{text-align:center;font-size:11px;color:var(--text-sec);padding:6px 0;font-weight:500}
+.cal-day{text-align:center;padding:6px 2px;border-radius:8px;cursor:pointer;position:relative;min-height:36px}
+.cal-day:active{background:var(--gray-light)}
+.cal-day.today{background:var(--blue-bg)}
+.cal-day.today .cal-num{color:var(--blue);font-weight:600}
+.cal-day.selected{outline:2px solid var(--blue);outline-offset:-2px}
+.cal-num{font-size:13px}
+.cal-dot{height:3px;border-radius:2px;margin:2px 4px 0}
+.cal-day-detail{margin:8px 12px;padding:12px;background:var(--gray-light);border-radius:var(--radius)}
+.cal-day-detail .cal-entry{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--white);border-radius:8px;margin-bottom:6px}
+.cal-day-detail .cal-entry:last-of-type{margin-bottom:0}
 </style>
 </head>
 <body>
@@ -142,7 +160,50 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
     </div>
     <div id="recent-entries" style="max-height:45vh;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
   </div>
-  <button class="fab no-print" onclick="showScreen('s-customers')">☰</button>
+  <div class="bottom-nav no-print">
+    <button class="nav-tab active" id="tab-auftraege" onclick="switchTab('auftraege')">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM17.99 9l-1.41-1.42-6.59 6.59-2.58-2.57-1.42 1.41 4 3.99z"/></svg>
+      Aufträge
+    </button>
+    <button class="nav-tab" id="tab-kalender" onclick="switchTab('kalender')">
+      <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+      Kalender
+    </button>
+  </div>
+  <button class="fab no-print" onclick="showScreen('s-customers')" id="fab-btn">☰</button>
+</div>
+
+<!-- ========== SCREEN: KALENDER ========== -->
+<div id="s-calendar" class="screen">
+  <header>
+    <div style="flex:1">
+      <h1>📅 Kalender</h1>
+    </div>
+    <button class="back" onclick="showScreen('s-settings')" title="Einstellungen">⚙</button>
+  </header>
+  <div class="content" style="padding-top:8px">
+    <div class="month-nav">
+      <button onclick="changeCalMonth(-1)">‹</button>
+      <span id="cal-month-label"></span>
+      <button onclick="changeCalMonth(1)">›</button>
+    </div>
+    <div class="cal-grid" style="margin-bottom:4px">
+      <div class="cal-header">Mo</div><div class="cal-header">Di</div><div class="cal-header">Mi</div>
+      <div class="cal-header">Do</div><div class="cal-header">Fr</div><div class="cal-header">Sa</div><div class="cal-header">So</div>
+    </div>
+    <div class="cal-grid" id="cal-days"></div>
+    <div id="cal-day-detail"></div>
+  </div>
+  <div class="bottom-nav no-print">
+    <button class="nav-tab" id="tab-auftraege2" onclick="switchTab('auftraege')">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM17.99 9l-1.41-1.42-6.59 6.59-2.58-2.57-1.42 1.41 4 3.99z"/></svg>
+      Aufträge
+    </button>
+    <button class="nav-tab active" id="tab-kalender2" onclick="switchTab('kalender')">
+      <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+      Kalender
+    </button>
+  </div>
 </div>
 
 <!-- ========== SCREEN: KUNDEN AUSWÄHLEN (Dauerkunde) ========== -->
@@ -491,6 +552,23 @@ function showScreen(id) {
   if (id === 's-customers') loadAllCustomers();
   if (id === 's-history') loadPrivateEntries();
   if (id === 's-new-customer') initNewCustomerForm();
+  if (id === 's-calendar') renderCalendar();
+
+  // Update bottom nav active state
+  const isHome = id === 's-home';
+  const isCal = id === 's-calendar';
+  document.getElementById('tab-auftraege').classList.toggle('active', isHome);
+  document.getElementById('tab-kalender').classList.toggle('active', isCal);
+  document.getElementById('tab-auftraege2').classList.toggle('active', isHome);
+  document.getElementById('tab-kalender2').classList.toggle('active', isCal);
+  // Show/hide FAB only on home
+  const fab = document.getElementById('fab-btn');
+  if (fab) fab.style.display = isHome ? '' : 'none';
+}
+
+function switchTab(tab) {
+  if (tab === 'auftraege') { showScreen('s-home'); loadRecentEntries(); }
+  else if (tab === 'kalender') { showScreen('s-calendar'); }
 }
 
 // ============================================
@@ -1027,7 +1105,14 @@ function showConfirmScreen(duration) {
   };
 
   document.getElementById('confirm-duration').value = duration;
-  if (!editingVisitId) document.getElementById('confirm-date').value = todayStr();
+  if (!editingVisitId) {
+    if (window._calPreDate) {
+      document.getElementById('confirm-date').value = window._calPreDate;
+      window._calPreDate = null;
+    } else {
+      document.getElementById('confirm-date').value = todayStr();
+    }
+  }
   showScreen('s-confirm');
 }
 
@@ -1742,6 +1827,103 @@ function drawBarChart(ctx, W, H, labels, values) {
     ctx.fillText(l,0,10); ctx.restore();
     if(values[i]>0){ctx.fillStyle='#1C1C1E';ctx.font='bold 9px -apple-system,sans-serif';ctx.fillText(Number.isInteger(values[i]) ? values[i] : values[i].toFixed(1).replace('.', ','),x,y-4);ctx.font='9px -apple-system,sans-serif';}
   });
+}
+
+// ============================================
+// CALENDAR
+// ============================================
+let calMonth = new Date();
+let calSelectedDate = null;
+let calEntries = [];
+
+function changeCalMonth(d) {
+  calMonth.setMonth(calMonth.getMonth() + d);
+  calSelectedDate = null;
+  renderCalendar();
+}
+
+async function renderCalendar() {
+  if (!db) return;
+  const y = calMonth.getFullYear(), m = calMonth.getMonth();
+  document.getElementById('cal-month-label').textContent = MONTHS_DE[m] + ' ' + y;
+
+  // Load entries for this month
+  const startDate = y + '-' + String(m+1).padStart(2,'0') + '-01';
+  const endDate = m === 11 ? (y+1) + '-01-01' : y + '-' + String(m+2).padStart(2,'0') + '-01';
+  const { data } = await db.from('visits').select('*, customers(name, type)')
+    .gte('date', startDate).lt('date', endDate).order('date');
+  calEntries = data || [];
+
+  // Group by day
+  const byDay = {};
+  calEntries.forEach(v => {
+    const day = parseInt(v.date.split('-')[2]);
+    if (!byDay[day]) byDay[day] = [];
+    byDay[day].push(v);
+  });
+
+  // Build grid
+  const firstDay = new Date(y, m, 1).getDay(); // 0=Sun
+  const offset = firstDay === 0 ? 6 : firstDay - 1; // Mo-based offset
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const today = new Date();
+  const isThisMonth = today.getFullYear() === y && today.getMonth() === m;
+
+  let html = '';
+  for (let i = 0; i < offset; i++) html += '<div></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = isThisMonth && today.getDate() === d;
+    const isSel = calSelectedDate === d;
+    const count = byDay[d] ? byDay[d].length : 0;
+    let dotColor = '';
+    if (count === 1) dotColor = '#34C759';
+    else if (count >= 2 && count <= 3) dotColor = '#FF9500';
+    else if (count >= 4) dotColor = '#FF3B30';
+    const cls = 'cal-day' + (isToday ? ' today' : '') + (isSel ? ' selected' : '');
+    html += `<div class="${cls}" onclick="selectCalDay(${d})"><span class="cal-num">${d}</span>`;
+    if (dotColor) html += `<div class="cal-dot" style="background:${dotColor}"></div>`;
+    html += '</div>';
+  }
+  document.getElementById('cal-days').innerHTML = html;
+
+  // Show day detail if selected
+  if (calSelectedDate && byDay[calSelectedDate]) {
+    renderCalDayDetail(calSelectedDate, byDay[calSelectedDate]);
+  } else {
+    document.getElementById('cal-day-detail').innerHTML = '';
+  }
+}
+
+function selectCalDay(d) {
+  calSelectedDate = calSelectedDate === d ? null : d;
+  renderCalendar();
+}
+
+function renderCalDayDetail(day, entries) {
+  const y = calMonth.getFullYear(), m = calMonth.getMonth();
+  const dateStr = new Date(y, m, day).toLocaleDateString('de-DE', {weekday:'short', day:'numeric', month:'long'});
+  const isoDate = y + '-' + String(m+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+
+  let html = `<div class="cal-day-detail"><div style="font-size:13px;font-weight:500;margin-bottom:8px">${dateStr}</div>`;
+  entries.forEach(v => {
+    const badge = v.customers.type === 'dauerkunde'
+      ? '<span style="background:var(--blue-bg);color:var(--blue);padding:1px 6px;border-radius:4px;font-size:10px;margin-left:4px">DK</span>'
+      : '<span style="background:var(--green-bg);color:var(--green);padding:1px 6px;border-radius:4px;font-size:10px;margin-left:4px">PK</span>';
+    const borderColor = v.customers.type === 'dauerkunde' ? 'var(--blue)' : 'var(--green)';
+    html += `<div class="cal-entry" style="border-left:3px solid ${borderColor}" onclick="editVisit('${v.id}')">
+      <div><div style="font-size:13px;font-weight:500">${v.customers.name}</div>
+      <div style="font-size:11px;color:var(--text-sec)">${v.duration_minutes} Min. ${badge}</div></div>
+    </div>`;
+  });
+  html += `<button class="btn btn-outline" style="margin-top:8px;font-size:13px;padding:8px" onclick="newEntryFromCal('${isoDate}')">+ Neuer Eintrag</button></div>`;
+  document.getElementById('cal-day-detail').innerHTML = html;
+}
+
+function newEntryFromCal(dateStr) {
+  window._calPreDate = dateStr;
+  // Show quick type picker
+  const type = confirm('Dauerkunde?\n\nOK = Dauerkunde\nAbbrechen = Privatkunde') ? 'dauerkunde' : 'privatkunde';
+  startEntry(type);
 }
 
 // Service Worker
