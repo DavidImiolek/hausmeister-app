@@ -1582,7 +1582,7 @@ async function renderStatistics() {
   if (!db) return;
   const typeFilter = document.getElementById('stat-type-filter').value;
   const valueFilter = document.getElementById('stat-value-filter').value;
-  let query = db.from('visits').select('id, customer_name, customer_type, date, duration_minutes, customers!inner(name, type)');
+  let query = db.from('visits').select('id, date, duration_minutes, customers!inner(name, type)');
   if (typeFilter !== 'all') query = query.eq('customers.type', typeFilter);
   const { data, error } = await query;
   if (error || !data) { console.error('Stats error', error); return; }
