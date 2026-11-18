@@ -320,9 +320,14 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
 <div id="s-history" class="screen">
   <header>
     <button class="back" onclick="showScreen('s-home')">←</button>
-    <h1>Privatkunden</h1>
+    <h1>Alle Einträge</h1>
   </header>
   <div class="content">
+    <div class="toggle-group" id="history-filter-group">
+      <button class="active" onclick="switchHistoryFilter('all')">Alle</button>
+      <button onclick="switchHistoryFilter('privatkunde')">PK</button>
+      <button onclick="switchHistoryFilter('dauerkunde')">DK</button>
+    </div>
     <div class="month-nav">
       <button onclick="changePrivMonth(-1)">‹</button>
       <span id="priv-month-label"></span>
@@ -1220,6 +1225,13 @@ function changeMonth(delta) {
 // ============================================
 // PRIVATE ENTRIES LIST
 // ============================================
+let historyFilter = 'all';
+function switchHistoryFilter(f) {
+  historyFilter = f;
+  document.querySelectorAll('#history-filter-group button').forEach((b,i) => b.classList.toggle('active', (i===0&&f==='all')||(i===1&&f==='privatkunde')||(i===2&&f==='dauerkunde')));
+  loadPrivateEntries();
+}
+
 async function loadPrivateEntries() {
   if (!db) return;
   const year = privMonth.getFullYear();
@@ -1231,11 +1243,12 @@ async function loadPrivateEntries() {
   const startDate = `${year}-${String(month+1).padStart(2,'0')}-01`;
   const endDate = `${year}-${String(month+1).padStart(2,'0')}-${daysInMonth}`;
 
-  const { data } = await db.from('visits')
+  let query = db.from('visits')
     .select('*, customers!inner(name, type)')
-    .eq('customers.type', 'privatkunde')
     .gte('date', startDate).lte('date', endDate)
     .order('date', { ascending: false });
+  if (historyFilter !== 'all') query = query.eq('customers.type', historyFilter);
+  const { data } = await query;
 
   const el = document.getElementById('priv-entries-list');
   if (!data || data.length === 0) {
@@ -1254,7 +1267,7 @@ async function loadPrivateEntries() {
       <div class="swipe-inner" style="border:${paidBorder}">
         <div class="list-item" onclick="toggleDetails('${v.id}')">
           <div>
-            <div class="name">${v.customers.name}</div>
+            <div class="name">${v.customers.type === 'dauerkunde' ? '<span class="customer-type-badge" style="background:var(--blue-bg);color:var(--blue)">DK</span>' : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">PK</span>'} ${v.customers.name}</div>
             <div class="meta">${v.notes || '-'}${v.details ? ' 📝' : ''}</div>
           </div>
           <div style="text-align:right">
