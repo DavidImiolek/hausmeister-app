@@ -355,6 +355,60 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
     </div>
     <button class="btn btn-primary" onclick="saveSettings()">Speichern und verbinden</button>
     <p id="settings-status" style="margin-top:12px;font-size:13px;color:var(--text-sec);text-align:center"></p>
+    <div style="margin-top:24px;border-top:1px solid var(--gray-border);padding-top:16px">
+      <button class="btn btn-outline" onclick="openStatistics()" style="display:flex;align-items:center;justify-content:center;gap:8px">📊 Statistiken</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCREEN: STATISTIKEN ========== -->
+<div id="s-statistics" class="screen">
+  <header>
+    <button class="back" onclick="showScreen('s-settings')">←</button>
+    <h1>Statistiken</h1>
+  </header>
+  <div class="content">
+    <div class="toggle-group" id="stat-tab-group">
+      <button class="active" onclick="switchStatTab('time')">Zeitvergleich</button>
+      <button onclick="switchStatTab('customer')">Pro Kunde</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <select id="stat-type-filter" onchange="renderStatistics()" style="flex:1;padding:8px;border:1px solid var(--gray-border);border-radius:6px;font-size:13px">
+        <option value="all">Alle</option>
+        <option value="dauerkunde">DK</option>
+        <option value="privatkunde">PK</option>
+      </select>
+      <select id="stat-value-filter" onchange="renderStatistics()" style="flex:1;padding:8px;border:1px solid var(--gray-border);border-radius:6px;font-size:13px">
+        <option value="count">Einsätze</option>
+        <option value="hours">Stunden</option>
+      </select>
+    </div>
+    <div id="stat-time-controls">
+      <div class="toggle-group" id="stat-period-group" style="margin-bottom:8px">
+        <button class="active" onclick="switchStatPeriod('monthly')">Monatlich</button>
+        <button onclick="switchStatPeriod('yearly')">Jährlich</button>
+      </div>
+      <div class="month-nav" id="stat-year-nav">
+        <button onclick="changeStatYear(-1)">‹</button>
+        <span id="stat-year-label">2026</span>
+        <button onclick="changeStatYear(1)">›</button>
+      </div>
+    </div>
+    <div id="stat-cust-controls" style="display:none">
+      <div class="toggle-group" id="stat-cust-period-group" style="margin-bottom:8px">
+        <button class="active" onclick="switchStatCustPeriod('monthly')">Monatlich</button>
+        <button onclick="switchStatCustPeriod('yearly')">Jährlich</button>
+      </div>
+      <div class="month-nav" id="stat-cust-nav">
+        <button onclick="changeStatCustMonth(-1)">‹</button>
+        <span id="stat-cust-label">November 2026</span>
+        <button onclick="changeStatCustMonth(1)">›</button>
+      </div>
+    </div>
+    <div style="background:var(--white);border-radius:8px;border:1px solid var(--gray-border);padding:12px;margin-top:8px">
+      <canvas id="stat-chart" width="400" height="260" style="width:100%;height:auto"></canvas>
+    </div>
+    <div id="stat-summary" style="margin-top:8px;font-size:13px;color:var(--text-sec);text-align:center"></div>
   </div>
 </div>
 
@@ -1477,6 +1531,136 @@ function formatDate(str) {
 
 function formatDateLong(date) {
   return `${date.getDate()}. ${MONTHS_DE[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+
+// ============================================
+//  STATISTICS
+// ============================================
+let statTab = 'time';
+let statPeriod = 'monthly';
+let statYear = new Date().getFullYear();
+let statCustPeriod = 'monthly';
+let statCustYear = new Date().getFullYear();
+let statCustMonth = new Date().getMonth();
+const STAT_MONTHS = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+const STAT_MONTHS_FULL = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+function openStatistics() { showScreen('s-statistics'); renderStatistics(); }
+
+function switchStatTab(tab) {
+  statTab = tab;
+  document.querySelectorAll('#stat-tab-group button').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='time')||(i===1&&tab==='customer')));
+  document.getElementById('stat-time-controls').style.display = tab==='time'?'':'none';
+  document.getElementById('stat-cust-controls').style.display = tab==='customer'?'':'none';
+  renderStatistics();
+}
+
+function switchStatPeriod(p) {
+  statPeriod = p;
+  document.querySelectorAll('#stat-period-group button').forEach((b,i) => b.classList.toggle('active', (i===0&&p==='monthly')||(i===1&&p==='yearly')));
+  document.getElementById('stat-year-nav').style.display = p==='monthly'?'':'none';
+  renderStatistics();
+}
+function changeStatYear(d) { statYear += d; document.getElementById('stat-year-label').textContent = statYear; renderStatistics(); }
+
+function switchStatCustPeriod(p) {
+  statCustPeriod = p;
+  document.querySelectorAll('#stat-cust-period-group button').forEach((b,i) => b.classList.toggle('active', (i===0&&p==='monthly')||(i===1&&p==='yearly')));
+  document.getElementById('stat-cust-nav').style.display = p==='monthly'?'':'none';
+  renderStatistics();
+}
+function changeStatCustMonth(d) {
+  statCustMonth += d;
+  if (statCustMonth < 0) { statCustMonth = 11; statCustYear--; }
+  if (statCustMonth > 11) { statCustMonth = 0; statCustYear++; }
+  document.getElementById('stat-cust-label').textContent = STAT_MONTHS_FULL[statCustMonth] + ' ' + statCustYear;
+  renderStatistics();
+}
+
+async function renderStatistics() {
+  if (!db) return;
+  const typeFilter = document.getElementById('stat-type-filter').value;
+  const valueFilter = document.getElementById('stat-value-filter').value;
+  let query = db.from('visits').select('id, customer_name, customer_type, date, duration_minutes, customers!inner(name, type)');
+  if (typeFilter !== 'all') query = query.eq('customers.type', typeFilter);
+  const { data, error } = await query;
+  if (error || !data) { console.error('Stats error', error); return; }
+  if (statTab === 'time') renderTimeChart(data, valueFilter);
+  else renderCustomerChart(data, valueFilter);
+}
+
+function renderTimeChart(data, vf) {
+  const canvas = document.getElementById('stat-chart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.clientWidth * dpr; canvas.height = canvas.clientHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  let labels, values;
+  if (statPeriod === 'monthly') {
+    labels = STAT_MONTHS; values = new Array(12).fill(0);
+    data.forEach(v => { const d = new Date(v.date); if (d.getFullYear() === statYear) values[d.getMonth()] += vf === 'count' ? 1 : (v.duration_minutes || 0); });
+  } else {
+    const yrs = new Set(); data.forEach(v => yrs.add(new Date(v.date).getFullYear()));
+    labels = [...yrs].sort(); if (!labels.length) labels = [new Date().getFullYear()];
+    values = labels.map(yr => data.filter(v => new Date(v.date).getFullYear() === yr).reduce((s, v) => s + (vf === 'count' ? 1 : (v.duration_minutes || 0)), 0));
+    labels = labels.map(String);
+  }
+  drawBarChart(ctx, W, H, labels, values);
+  document.getElementById('stat-summary').textContent = 'Gesamt: ' + values.reduce((a,b)=>a+b,0) + (vf === 'count' ? ' Einsätze' : ' Minuten');
+}
+
+function renderCustomerChart(data, vf) {
+  const canvas = document.getElementById('stat-chart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.clientWidth * dpr; canvas.height = canvas.clientHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  let filtered = data;
+  if (statCustPeriod === 'monthly') {
+    filtered = data.filter(v => { const d = new Date(v.date); return d.getFullYear() === statCustYear && d.getMonth() === statCustMonth; });
+  } else {
+    filtered = data.filter(v => new Date(v.date).getFullYear() === statCustYear);
+  }
+  const map = {};
+  filtered.forEach(v => { const name = v.customers?.name || 'Unbekannt'; map[name] = (map[name]||0) + (vf === 'count' ? 1 : (v.duration_minutes || 0)); });
+  let entries = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0, 12);
+  if (!entries.length) entries = [['—', 0]];
+  const labels = entries.map(e => e[0].length > 10 ? e[0].slice(0,9)+'…' : e[0]);
+  const values = entries.map(e => e[1]);
+  drawBarChart(ctx, W, H, labels, values);
+  document.getElementById('stat-summary').textContent = 'Gesamt: ' + values.reduce((a,b)=>a+b,0) + (vf === 'count' ? ' Einsätze' : ' Minuten');
+}
+
+function drawBarChart(ctx, W, H, labels, values) {
+  const pad = {top:20, right:10, bottom:40, left:36};
+  const cW = W-pad.left-pad.right, cH = H-pad.top-pad.bottom;
+  const max = Math.max(...values, 1), n = labels.length;
+  const barW = Math.max(8, (cW/n)*0.6), gap = cW/n;
+  ctx.fillStyle='#8E8E93'; ctx.font='10px -apple-system,sans-serif'; ctx.textAlign='right';
+  for (let i=0;i<=4;i++) {
+    const v=Math.round(max/4*i), y=pad.top+cH-(cH*(v/max));
+    ctx.fillText(v, pad.left-4, y+3);
+    ctx.strokeStyle='#E5E5EA'; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke();
+  }
+  ctx.textAlign='center'; ctx.font='9px -apple-system,sans-serif';
+  labels.forEach((l,i) => {
+    const x=pad.left+gap*i+gap/2, h=(values[i]/max)*cH, y=pad.top+cH-h;
+    const grad=ctx.createLinearGradient(0,y,0,pad.top+cH);
+    grad.addColorStop(0,'#007AFF'); grad.addColorStop(1,'#34C759');
+    ctx.fillStyle=grad;
+    ctx.beginPath(); ctx.roundRect(x-barW/2,y,barW,h,[3,3,0,0]); ctx.fill();
+    ctx.fillStyle='#8E8E93';
+    ctx.save(); ctx.translate(x,pad.top+cH+6);
+    if(n>8){ctx.rotate(-0.5);ctx.textAlign='right';}
+    ctx.fillText(l,0,10); ctx.restore();
+    if(values[i]>0){ctx.fillStyle='#1C1C1E';ctx.font='bold 9px -apple-system,sans-serif';ctx.fillText(values[i],x,y-4);ctx.font='9px -apple-system,sans-serif';}
+  });
 }
 
 // Service Worker
