@@ -1601,15 +1601,15 @@ function renderTimeChart(data, vf) {
   let labels, values;
   if (statPeriod === 'monthly') {
     labels = STAT_MONTHS; values = new Array(12).fill(0);
-    data.forEach(v => { const d = new Date(v.date); if (d.getFullYear() === statYear) values[d.getMonth()] += vf === 'count' ? 1 : (v.duration_minutes || 0); });
+    data.forEach(v => { const d = new Date(v.date); if (d.getFullYear() === statYear) values[d.getMonth()] += vf === 'count' ? 1 : ((v.duration_minutes || 0) / 60); });
   } else {
     const yrs = new Set(); data.forEach(v => yrs.add(new Date(v.date).getFullYear()));
     labels = [...yrs].sort(); if (!labels.length) labels = [new Date().getFullYear()];
-    values = labels.map(yr => data.filter(v => new Date(v.date).getFullYear() === yr).reduce((s, v) => s + (vf === 'count' ? 1 : (v.duration_minutes || 0)), 0));
+    values = labels.map(yr => data.filter(v => new Date(v.date).getFullYear() === yr).reduce((s, v) => s + (vf === 'count' ? 1 : ((v.duration_minutes || 0) / 60)), 0));
     labels = labels.map(String);
   }
   drawBarChart(ctx, W, H, labels, values);
-  document.getElementById('stat-summary').textContent = 'Gesamt: ' + values.reduce((a,b)=>a+b,0) + (vf === 'count' ? ' Einsätze' : ' Minuten');
+  document.getElementById('stat-summary').textContent = 'Gesamt: ' + (vf === 'count' ? values.reduce((a,b)=>a+b,0) + ' Einsätze' : values.reduce((a,b)=>a+b,0).toFixed(1).replace('.', ',') + ' Stunden');
 }
 
 function renderCustomerChart(data, vf) {
@@ -1627,13 +1627,13 @@ function renderCustomerChart(data, vf) {
     filtered = data.filter(v => new Date(v.date).getFullYear() === statCustYear);
   }
   const map = {};
-  filtered.forEach(v => { const name = v.customers?.name || 'Unbekannt'; map[name] = (map[name]||0) + (vf === 'count' ? 1 : (v.duration_minutes || 0)); });
+  filtered.forEach(v => { const name = v.customers?.name || 'Unbekannt'; map[name] = (map[name]||0) + (vf === 'count' ? 1 : ((v.duration_minutes || 0) / 60)); });
   let entries = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0, 12);
   if (!entries.length) entries = [['—', 0]];
   const labels = entries.map(e => e[0].length > 10 ? e[0].slice(0,9)+'…' : e[0]);
   const values = entries.map(e => e[1]);
   drawBarChart(ctx, W, H, labels, values);
-  document.getElementById('stat-summary').textContent = 'Gesamt: ' + values.reduce((a,b)=>a+b,0) + (vf === 'count' ? ' Einsätze' : ' Minuten');
+  document.getElementById('stat-summary').textContent = 'Gesamt: ' + (vf === 'count' ? values.reduce((a,b)=>a+b,0) + ' Einsätze' : values.reduce((a,b)=>a+b,0).toFixed(1).replace('.', ',') + ' Stunden');
 }
 
 function drawBarChart(ctx, W, H, labels, values) {
@@ -1644,7 +1644,7 @@ function drawBarChart(ctx, W, H, labels, values) {
   ctx.fillStyle='#8E8E93'; ctx.font='10px -apple-system,sans-serif'; ctx.textAlign='right';
   for (let i=0;i<=4;i++) {
     const v=Math.round(max/4*i), y=pad.top+cH-(cH*(v/max));
-    ctx.fillText(v, pad.left-4, y+3);
+    ctx.fillText(max < 10 ? (max/4*i).toFixed(1).replace('.', ',') : v, pad.left-4, y+3);
     ctx.strokeStyle='#E5E5EA'; ctx.lineWidth=0.5;
     ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke();
   }
@@ -1659,7 +1659,7 @@ function drawBarChart(ctx, W, H, labels, values) {
     ctx.save(); ctx.translate(x,pad.top+cH+6);
     if(n>8){ctx.rotate(-0.5);ctx.textAlign='right';}
     ctx.fillText(l,0,10); ctx.restore();
-    if(values[i]>0){ctx.fillStyle='#1C1C1E';ctx.font='bold 9px -apple-system,sans-serif';ctx.fillText(values[i],x,y-4);ctx.font='9px -apple-system,sans-serif';}
+    if(values[i]>0){ctx.fillStyle='#1C1C1E';ctx.font='bold 9px -apple-system,sans-serif';ctx.fillText(Number.isInteger(values[i]) ? values[i] : values[i].toFixed(1).replace('.', ','),x,y-4);ctx.font='9px -apple-system,sans-serif';}
   });
 }
 
