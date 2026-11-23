@@ -579,6 +579,7 @@ async function loadRecentEntries() {
   const { data } = await db
     .from('visits')
     .select('*, customers(name, type)')
+    .lte('date', todayStr())
     .order('date', { ascending: false })
     .limit(5);
 
@@ -1451,6 +1452,7 @@ async function loadPrivateEntries() {
   let query = db.from('visits')
     .select('*, customers!inner(name, type)')
     .gte('date', startDate).lte('date', endDate)
+    .lte('date', todayStr())
     .order('date', { ascending: false });
   if (historyFilter !== 'all') query = query.eq('customers.type', historyFilter);
   const { data } = await query;
@@ -1921,9 +1923,7 @@ function renderCalDayDetail(day, entries) {
 
 function newEntryFromCal(dateStr) {
   window._calPreDate = dateStr;
-  // Show quick type picker
-  const type = confirm('Dauerkunde?\n\nOK = Dauerkunde\nAbbrechen = Privatkunde') ? 'dauerkunde' : 'privatkunde';
-  startEntry(type);
+  startEntry('privatkunde');
 }
 
 // Service Worker
