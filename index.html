@@ -425,6 +425,7 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
     <p id="settings-status" style="margin-top:12px;font-size:13px;color:var(--text-sec);text-align:center"></p>
     <div style="margin-top:24px;border-top:1px solid var(--gray-border);padding-top:16px">
       <button class="btn btn-outline" onclick="openStatistics()" style="display:flex;align-items:center;justify-content:center;gap:8px">📊 Statistiken</button>
+      <button class="btn btn-outline" id="btn-push" onclick="initPush()" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px">🔔 Benachrichtigungen aktivieren</button>
     </div>
   </div>
 </div>
@@ -1968,7 +1969,9 @@ async function initPush() {
     const key = localStorage.getItem('sb_key') || 'sb_publishable_YTmQmOUVfvxP1zPe7bagvw_79F85Qet';
     const db = window.supabase.createClient(url, key);
     await db.from('push_subscriptions').upsert({ id: sub.endpoint, subscription: sub.toJSON() }, { onConflict: 'id' });
-  } catch(e) { console.log('Push init error:', e); }
+    document.getElementById('btn-push').textContent = '✅ Benachrichtigungen aktiv';
+    document.getElementById('btn-push').disabled = true;
+  } catch(e) { console.log('Push init error:', e); alert('Push-Fehler: ' + e.message); }
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -1982,7 +1985,7 @@ function urlBase64ToUint8Array(base64String) {
 
 // Service Worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(reg => { reg.update(); navigator.serviceWorker.addEventListener('controllerchange', () => location.reload()); initPush(); }).catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(reg => { reg.update(); navigator.serviceWorker.addEventListener('controllerchange', () => location.reload()); }).catch(() => {});
 }
 
 // Start
