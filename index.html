@@ -1073,7 +1073,7 @@ function showPrivatConfirm(taskText, duration, spokenDate) {
   document.getElementById('confirm-notes-section').classList.remove('hidden');
   document.getElementById('confirm-notes').value = taskText;
   document.getElementById('confirm-duration').value = duration;
-  document.getElementById('confirm-date').value = spokenDate || todayStr();
+  if (window._calPreDate) { document.getElementById('confirm-date').value = window._calPreDate; window._calPreDate = null; } else { document.getElementById('confirm-date').value = spokenDate || todayStr(); }
 
   const custHTML = selectedCustomer && selectedCustomer.name
     ? `<div class="input-group"><label>Kunde</label><input type="text" id="confirm-cust-name" value="${selectedCustomer.name}"></div>`
