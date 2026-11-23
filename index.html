@@ -1889,8 +1889,8 @@ async function renderCalendar() {
   document.getElementById('cal-days').innerHTML = html;
 
   // Show day detail if selected
-  if (calSelectedDate && byDay[calSelectedDate]) {
-    renderCalDayDetail(calSelectedDate, byDay[calSelectedDate]);
+  if (calSelectedDate) {
+    renderCalDayDetail(calSelectedDate, byDay[calSelectedDate] || []);
   } else {
     document.getElementById('cal-day-detail').innerHTML = '';
   }

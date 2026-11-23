@@ -1,4 +1,4 @@
-﻿const CACHE = 'hm-v15';
+﻿const CACHE = 'hm-v16';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
