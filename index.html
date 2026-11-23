@@ -1912,13 +1912,35 @@ function renderCalDayDetail(day, entries) {
       ? '<span style="background:var(--blue-bg);color:var(--blue);padding:1px 6px;border-radius:4px;font-size:10px;margin-left:4px">DK</span>'
       : '<span style="background:var(--green-bg);color:var(--green);padding:1px 6px;border-radius:4px;font-size:10px;margin-left:4px">PK</span>';
     const borderColor = v.customers.type === 'dauerkunde' ? 'var(--blue)' : 'var(--green)';
-    html += `<div class="cal-entry" style="border-left:3px solid ${borderColor}" onclick="editVisit('${v.id}')">
-      <div><div style="font-size:13px;font-weight:500">${v.customers.name}</div>
-      <div style="font-size:11px;color:var(--text-sec)">${v.duration_minutes} Min. ${badge}</div></div>
-    </div>`;
+    html += `<div class="swipe-container" data-visit-id="${v.id}">
+      <div class="swipe-edit-bg" onclick="editVisit('${v.id}')">Bearbeiten</div>
+      <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
+      <div class="swipe-inner" style="border-left:3px solid ${borderColor};padding:8px 10px">
+        <div><div style="font-size:13px;font-weight:500">${v.customers.name}</div>
+        <div style="font-size:11px;color:var(--text-sec)">${v.duration_minutes} Min. ${badge}</div></div>
+      </div></div>`;
   });
   html += `<button class="btn btn-outline" style="margin-top:8px;font-size:13px;padding:8px" onclick="newEntryFromCal('${isoDate}')">+ Neuer Eintrag</button></div>`;
   document.getElementById('cal-day-detail').innerHTML = html;
+  initCalSwipe();
+}
+
+function initCalSwipe() {
+  document.querySelectorAll('#cal-day-detail .swipe-container').forEach(container => {
+    const inner = container.querySelector('.swipe-inner');
+    let startX, currentX;
+    inner.addEventListener('touchstart', e => { startX = e.touches[0].clientX; currentX = 0; inner.classList.add('swiping'); });
+    inner.addEventListener('touchmove', e => {
+      currentX = e.touches[0].clientX - startX;
+      inner.style.transform = `translateX(${currentX}px)`;
+    });
+    inner.addEventListener('touchend', () => {
+      inner.classList.remove('swiping');
+      if (currentX < -60) inner.style.transform = 'translateX(-80px)';
+      else if (currentX > 60) inner.style.transform = 'translateX(80px)';
+      else inner.style.transform = 'translateX(0)';
+    });
+  });
 }
 
 function newEntryFromCal(dateStr) {
