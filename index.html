@@ -1967,7 +1967,7 @@ async function initPush() {
     const url = localStorage.getItem('sb_url') || 'https://hcefeifetaonhnxzdgak.supabase.co';
     const key = localStorage.getItem('sb_key') || 'sb_publishable_YTmQmOUVfvxP1zPe7bagvw_79F85Qet';
     const db = window.supabase.createClient(url, key);
-    await db.from('push_subscriptions').upsert({ id: sub.endpoint.slice(-36).replace(/[^a-f0-9-]/g,'0').padEnd(36,'0'), subscription: sub.toJSON() }, { onConflict: 'id' });
+    await db.from('push_subscriptions').upsert({ id: sub.endpoint, subscription: sub.toJSON() }, { onConflict: 'id' });
   } catch(e) { console.log('Push init error:', e); }
 }
 
