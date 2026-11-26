@@ -1253,11 +1253,13 @@ async function saveEntry() {
       let visitId;
       if (existing && existing.length > 0) {
         visitId = existing[0].id;
-        await db.from('visits').update({ duration_minutes: duration, details: details || null, helper: helper || null, helper_paid: document.getElementById('confirm-helper-paid').checked, customer_paid: document.getElementById('confirm-customer-paid').checked }).eq('id', visitId);
+        const dkNotesUpd = confirmedTasks.map(t => t.name).join(', ');
+        await db.from('visits').update({ duration_minutes: duration, notes: dkNotesUpd || null, details: details || null, helper: helper || null, helper_paid: document.getElementById('confirm-helper-paid').checked, customer_paid: document.getElementById('confirm-customer-paid').checked }).eq('id', visitId);
         await db.from('visit_tasks').delete().eq('visit_id', visitId);
       } else {
+        const dkNotes = confirmedTasks.map(t => t.name).join(', ');
         const { data: newVisit } = await db.from('visits')
-          .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration, details: details || null, helper: helper || null, helper_paid: document.getElementById('confirm-helper-paid').checked, customer_paid: document.getElementById('confirm-customer-paid').checked })
+          .insert({ customer_id: selectedCustomer.id, date, duration_minutes: duration, notes: dkNotes || null, details: details || null, helper: helper || null, helper_paid: document.getElementById('confirm-helper-paid').checked, customer_paid: document.getElementById('confirm-customer-paid').checked })
           .select().single();
         if (newVisit) visitId = newVisit.id;
       }
