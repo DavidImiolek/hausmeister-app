@@ -304,7 +304,11 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
       <label style="font-size:13px;color:var(--gray-text);margin-bottom:6px;display:block">📷 Fotos</label>
       <div id="photo-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
       <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoSelect(event)">
-      <button type="button" class="btn btn-outline" onclick="document.getElementById('photo-input').click()" style="font-size:13px;padding:8px 16px">📷 Foto hinzufügen</button>
+      <input type="file" id="photo-capture" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoSelect(event)">
+      <div style="display:flex;gap:8px">
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('photo-capture').click()" style="font-size:13px;padding:8px 16px;flex:1">📸 Kamera</button>
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('photo-input').click()" style="font-size:13px;padding:8px 16px;flex:1">🖼️ Galerie</button>
+      </div>
     </div>
 
     <div class="flex-row" style="margin-top:20px">
