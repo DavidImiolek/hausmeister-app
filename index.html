@@ -583,7 +583,7 @@ async function loadRecentEntries() {
   if (!db) return;
   const { data } = await db
     .from('visits')
-    .select('*, customers(name, type)')
+    .select('*, customers(name, type, address)')
     .lte('date', todayStr())
     .order('date', { ascending: false })
     .limit(5);
@@ -606,7 +606,7 @@ async function loadRecentEntries() {
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
       <div class="swipe-inner" style="border:${paidBorder}">
         <div class="list-item card-action" onclick="toggleDetails('${v.id}'); ${tapAction}">
-          <div><div class="name">${badge} ${v.customers.name}</div>
+          <div><div class="name">${badge} ${custDisplayName(v.customers)}</div>
           <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.${(v.details || v.helper) ? ' 📝' : ''}</div></div>
           <div class="meta">${formatDate(v.date)}</div>
         </div>
@@ -1457,7 +1457,7 @@ async function loadPrivateEntries() {
   const endDate = `${year}-${String(month+1).padStart(2,'0')}-${daysInMonth}`;
 
   let query = db.from('visits')
-    .select('*, customers!inner(name, type)')
+    .select('*, customers!inner(name, type, address)')
     .gte('date', startDate).lte('date', endDate)
     .lte('date', todayStr())
     .order('date', { ascending: false });
@@ -1481,7 +1481,7 @@ async function loadPrivateEntries() {
       <div class="swipe-inner" style="border:${paidBorder}">
         <div class="list-item" onclick="toggleDetails('${v.id}')">
           <div>
-            <div class="name">${v.customers.type === 'dauerkunde' ? '<span class="customer-type-badge" style="background:var(--blue-bg);color:var(--blue)">DK</span>' : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">PK</span>'} ${v.customers.name}</div>
+            <div class="name">${v.customers.type === 'dauerkunde' ? '<span class="customer-type-badge" style="background:var(--blue-bg);color:var(--blue)">DK</span>' : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">PK</span>'} ${custDisplayName(v.customers)}</div>
             <div class="meta">${v.notes || '-'}${v.details ? ' 📝' : ''}</div>
           </div>
           <div style="text-align:right">
@@ -1757,7 +1757,7 @@ async function renderStatistics() {
   if (!db) return;
   const typeFilter = document.getElementById('stat-type-filter').value;
   const valueFilter = document.getElementById('stat-value-filter').value;
-  let query = db.from('visits').select('id, date, duration_minutes, customers!inner(name, type)');
+  let query = db.from('visits').select('id, date, duration_minutes, customers!inner(name, type, address)');
   if (typeFilter !== 'all') query = query.eq('customers.type', typeFilter);
   const { data, error } = await query;
   if (error || !data) { console.error('Stats error', error); return; }
@@ -1859,7 +1859,7 @@ async function renderCalendar() {
   // Load entries for this month
   const startDate = y + '-' + String(m+1).padStart(2,'0') + '-01';
   const endDate = m === 11 ? (y+1) + '-01-01' : y + '-' + String(m+2).padStart(2,'0') + '-01';
-  const { data } = await db.from('visits').select('*, customers(name, type)')
+  const { data } = await db.from('visits').select('*, customers(name, type, address)')
     .gte('date', startDate).lt('date', endDate).order('date');
   calEntries = data || [];
 
@@ -1923,7 +1923,7 @@ function renderCalDayDetail(day, entries) {
       <div class="swipe-edit-bg" onclick="editVisit('${v.id}')">Bearbeiten</div>
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
       <div class="swipe-inner" style="border-left:3px solid ${borderColor};padding:8px 10px">
-        <div><div style="font-size:13px;font-weight:500">${v.customers.name}</div>
+        <div><div style="font-size:13px;font-weight:500">${custDisplayName(v.customers)}</div>
         <div style="font-size:11px;color:var(--text-sec)">${v.duration_minutes} Min. ${badge}</div></div>
       </div></div>`;
   });
@@ -1953,6 +1953,13 @@ function initCalSwipe() {
 function newEntryFromCal(dateStr) {
   window._calPreDate = dateStr;
   startEntry('privatkunde');
+}
+
+// Customer display name with address
+function custDisplayName(c) {
+  if (!c) return 'Unbekannt';
+  if (c.type === 'dauerkunde' && c.address) return c.name + ' (' + c.address + ')';
+  return c.name;
 }
 
 // Push Notifications
