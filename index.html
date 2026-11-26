@@ -388,6 +388,34 @@ header .back{width:36px;height:36px;border:none;background:var(--gray-light);bor
   </div>
 </div>
 
+<!-- ========== SCREEN: KUNDE BEARBEITEN ========== -->
+<div id="s-edit-customer" class="screen">
+  <header>
+    <button class="back" onclick="showScreen('s-customers')">←</button>
+    <h1>Kunde bearbeiten</h1>
+  </header>
+  <div class="content">
+    <input type="hidden" id="edit-cust-id">
+    <div class="input-group">
+      <label>Kundenname</label>
+      <input type="text" id="edit-cust-name">
+    </div>
+    <div class="input-group">
+      <label>Adresse / Ort</label>
+      <input type="text" id="edit-cust-address">
+    </div>
+    <div id="edit-cust-tasks-section">
+      <div style="font-size:13px;color:var(--text-sec);margin-bottom:8px">Tätigkeiten</div>
+      <div id="edit-cust-tasks" style="background:var(--gray-light);border-radius:8px;padding:8px 12px;max-height:250px;overflow-y:auto"></div>
+      <div class="add-task-row">
+        <input type="text" id="edit-custom-task" placeholder="Neue Tätigkeit...">
+        <button onclick="addEditCustomTask()">+</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:20px" onclick="saveCustomerEdit()">Speichern</button>
+  </div>
+</div>
+
 <!-- ========== SCREEN: HISTORY ========== -->
 <div id="s-history" class="screen">
   <header>
@@ -607,7 +635,7 @@ async function loadRecentEntries() {
       <div class="swipe-inner" style="border:${paidBorder}">
         <div class="list-item card-action" onclick="toggleDetails('${v.id}'); ${tapAction}">
           <div><div class="name">${badge} ${custDisplayName(v.customers)}</div>
-          <div class="meta">${v.notes || ''} · ${v.duration_minutes} Min.${(v.details || v.helper) ? ' 📝' : ''}</div></div>
+          <div class="meta">${v.notes || ''} ${v.helper ? '🤝' : ''} · ${v.duration_minutes} Min.${(v.details || v.helper) ? ' 📝' : ''}</div></div>
           <div class="meta">${formatDate(v.date)}</div>
         </div>
         ${detailsHtml}
@@ -1482,7 +1510,7 @@ async function loadPrivateEntries() {
         <div class="list-item" onclick="toggleDetails('${v.id}')">
           <div>
             <div class="name">${v.customers.type === 'dauerkunde' ? '<span class="customer-type-badge" style="background:var(--blue-bg);color:var(--blue)">DK</span>' : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">PK</span>'} ${custDisplayName(v.customers)}</div>
-            <div class="meta">${v.notes || '-'}${v.details ? ' 📝' : ''}</div>
+            <div class="meta">${v.notes || '-'} ${v.helper ? '🤝' : ''}${v.details ? ' 📝' : ''}</div>
           </div>
           <div style="text-align:right">
             <div style="font-weight:500;font-size:13px">${v.duration_minutes} Min.</div>
@@ -1595,20 +1623,26 @@ function renderAllCustomers() {
       : '<span class="customer-type-badge" style="background:var(--green-bg);color:var(--green)">Privatkunde</span>';
     const tableBtn = c.type === 'dauerkunde'
       ? `<button style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer" onclick="openMonthTable('${c.id}')">📋 Tabelle</button>` : '';
-    return `<div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:start">
-        <div>
-          <div style="font-weight:500">${c.name}</div>
-          <div style="font-size:12px;color:var(--text-sec)">${c.address || ''}</div>
-          <div style="margin-top:4px">${badge}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:end">
-          ${tableBtn}
-          <button style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer" onclick="deleteCustomer('${c.id}','${c.name.replace(/'/g,"\\'")}')">Löschen</button>
+    return `<div class="swipe-container" data-cust-id="${c.id}">
+      <div class="swipe-edit-bg" onclick="editCustomer('${c.id}')">Bearbeiten</div>
+      <div class="swipe-delete-bg" onclick="deleteCustomer('${c.id}','${c.name.replace(/'/g,"\\'")}')">Löschen</div>
+      <div class="swipe-inner">
+        <div class="card" style="margin-bottom:0;border:none">
+          <div style="display:flex;justify-content:space-between;align-items:start">
+            <div>
+              <div style="font-weight:500">${c.name}</div>
+              <div style="font-size:12px;color:var(--text-sec)">${c.address || ''}</div>
+              <div style="margin-top:4px">${badge}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;align-items:end">
+              ${tableBtn}
+            </div>
+          </div>
         </div>
       </div>
     </div>`;
   }).join('');
+  initCustSwipe();
 }
 
 function filterCustomerList(type, btn) {
@@ -1622,6 +1656,77 @@ async function deleteCustomer(id, name) {
   if (!confirm('Kunde "' + name + '" und alle Einträge wirklich löschen?')) return;
   await db.from('customers').delete().eq('id', id);
   loadAllCustomers();
+}
+
+function initCustSwipe() {
+  document.querySelectorAll('#all-customers-list .swipe-container').forEach(container => {
+    const inner = container.querySelector('.swipe-inner');
+    let startX, currentX;
+    inner.addEventListener('touchstart', e => { startX = e.touches[0].clientX; currentX = 0; inner.classList.add('swiping'); });
+    inner.addEventListener('touchmove', e => { currentX = e.touches[0].clientX - startX; inner.style.transform = `translateX(${currentX}px)`; });
+    inner.addEventListener('touchend', () => {
+      inner.classList.remove('swiping');
+      if (currentX < -60) inner.style.transform = 'translateX(-80px)';
+      else if (currentX > 60) inner.style.transform = 'translateX(80px)';
+      else inner.style.transform = 'translateX(0)';
+    });
+  });
+}
+
+let editCustTasks = [];
+let editCustExtraTasks = [];
+
+async function editCustomer(id) {
+  const c = allCustomers.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('edit-cust-id').value = id;
+  document.getElementById('edit-cust-name').value = c.name;
+  document.getElementById('edit-cust-address').value = c.address || '';
+  document.getElementById('edit-cust-tasks-section').style.display = c.type === 'dauerkunde' ? '' : 'none';
+  editCustExtraTasks = [];
+  if (c.type === 'dauerkunde') {
+    const { data } = await db.from('customer_tasks').select('*').eq('customer_id', id).order('sort_order');
+    editCustTasks = data || [];
+    renderEditCustTasks();
+  }
+  showScreen('s-edit-customer');
+}
+
+function renderEditCustTasks() {
+  const el = document.getElementById('edit-cust-tasks');
+  const allT = [...DEFAULT_TASKS, ...editCustExtraTasks];
+  const activeNames = editCustTasks.map(t => t.name);
+  el.innerHTML = allT.map((t, i) => {
+    const checked = activeNames.includes(t) ? 'checked' : '';
+    return `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:14px"><input type="checkbox" class="edit-task-cb" value="${i}" ${checked}> ${t}</label>`;
+  }).join('');
+}
+
+function addEditCustomTask() {
+  const inp = document.getElementById('edit-custom-task');
+  const v = inp.value.trim();
+  if (!v) return;
+  editCustExtraTasks.push(v);
+  inp.value = '';
+  renderEditCustTasks();
+}
+
+async function saveCustomerEdit() {
+  const id = document.getElementById('edit-cust-id').value;
+  const name = document.getElementById('edit-cust-name').value.trim();
+  const address = document.getElementById('edit-cust-address').value.trim();
+  if (!name) { alert('Bitte Kundenname eingeben'); return; }
+  const c = allCustomers.find(x => x.id === id);
+  await db.from('customers').update({ name, address }).eq('id', id);
+  if (c && c.type === 'dauerkunde') {
+    await db.from('customer_tasks').delete().eq('customer_id', id);
+    const allT = [...DEFAULT_TASKS, ...editCustExtraTasks];
+    const checked = document.querySelectorAll('.edit-task-cb:checked');
+    const tasks = Array.from(checked).map((cb, i) => ({ customer_id: id, name: allT[parseInt(cb.value)], sort_order: i }));
+    if (tasks.length > 0) await db.from('customer_tasks').insert(tasks);
+  }
+  alert('Kunde gespeichert!');
+  showScreen('s-customers');
 }
 
 // ============================================
@@ -1924,7 +2029,7 @@ function renderCalDayDetail(day, entries) {
       <div class="swipe-delete-bg" onclick="deleteVisit('${v.id}')">Löschen</div>
       <div class="swipe-inner" style="border-left:3px solid ${borderColor};padding:8px 10px">
         <div><div style="font-size:13px;font-weight:500">${custDisplayName(v.customers)}</div>
-        <div style="font-size:11px;color:var(--text-sec)">${v.duration_minutes} Min. ${badge}</div></div>
+        <div style="font-size:11px;color:var(--text-sec)">${v.duration_minutes} Min. ${v.helper ? '🤝' : ''} ${badge}</div></div>
       </div></div>`;
   });
   html += `<button class="btn btn-outline" style="margin-top:8px;font-size:13px;padding:8px" onclick="newEntryFromCal('${isoDate}')">+ Neuer Eintrag</button></div>`;
